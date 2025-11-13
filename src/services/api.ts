@@ -88,8 +88,8 @@ export const votesAPI = {
 };
 
 export const publicProfileAPI = {
-  getUserProfile: (userId: number): Promise<UserPublicProfileResponse> => 
-    api.get(`/profile/${userId}`).then(res => res.data),
+  getUserProfile: (username: string): Promise<UserPublicProfileResponse> => 
+    api.get(`/profile/${username}`).then(res => res.data),
   
   getPollsCreatedByUser: (userId: number, sortBy: string = 'latest'): Promise<PollWithVoteResponse[]> => 
     api.get(`/profile/${userId}/polls-created?sortBy=${sortBy}`).then(res => res.data),
