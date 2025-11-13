@@ -9,7 +9,6 @@ import {
     CardContent,
     Chip,
     IconButton,
-    LinearProgress,
     Menu,
     MenuItem,
     Typography,
@@ -105,6 +104,7 @@ const PollCard: React.FC<PollCardProps> = ({
         }
         setMenuAnchor(null);
     };
+
     return (
         <Card sx={{ mb: 3, position: "relative" }}>
             <CardContent>
@@ -113,7 +113,7 @@ const PollCard: React.FC<PollCardProps> = ({
                     justifyContent="space-between"
                     alignItems="flex-start"
                 >
-                    <Typography variant="h6" gutterBottom sx={{ pr: 2 }}>
+                    <Typography variant="h6" gutterBottom sx={{ pr: 2, flex: 1 }}>
                         {poll.question}
                     </Typography>
                     {showActions && (
@@ -170,7 +170,7 @@ const PollCard: React.FC<PollCardProps> = ({
                     const isSelected = selectedOption === option.number;
 
                     return (
-                        <Box key={option.number} sx={{ mb: 2 }}>
+                        <Box key={option.number} sx={{ mb: 2, position: 'relative' }}>
                             <Button
                                 fullWidth
                                 variant={isSelected ? "contained" : "outlined"}
@@ -178,34 +178,91 @@ const PollCard: React.FC<PollCardProps> = ({
                                 disabled={voting}
                                 sx={{
                                     justifyContent: "space-between",
-                                    mb: 0.5,
                                     textTransform: "none",
-                                    py: 1,
-                                }}
-                            >
-                                <Typography
-                                    variant="body2"
-                                    align="left"
-                                    sx={{ flex: 1 }}
-                                >
-                                    {option.text}
-                                </Typography>
-                                <Typography variant="body2" sx={{ ml: 1 }}>
-                                    {option.votes} ({percentage.toFixed(1)}%)
-                                </Typography>
-                            </Button>
-                            <LinearProgress
-                                variant="determinate"
-                                value={percentage}
-                                sx={{
-                                    height: 6,
-                                    borderRadius: 3,
-                                    backgroundColor: "grey.200",
-                                    "& .MuiLinearProgress-bar": {
-                                        borderRadius: 3,
+                                    py: 1.5,
+                                    px: 2,
+                                    position: 'relative',
+                                    overflow: 'hidden',
+                                    background: isSelected 
+                                        ? 'linear-gradient(135deg, #9C27B0 0%, #E040FB 100%)'
+                                        : 'rgba(255, 255, 255, 0.05)',
+                                    border: isSelected ? 'none' : '1px solid',
+                                    borderColor: 'rgba(156, 39, 176, 0.3)',
+                                    '&:hover': {
+                                        background: isSelected 
+                                            ? 'linear-gradient(135deg, #8E24AA 0%, #D500F9 100%)'
+                                            : 'rgba(156, 39, 176, 0.1)',
+                                        transform: 'translateY(-1px)',
                                     },
                                 }}
-                            />
+                            >
+                                {/* Progress bar background */}
+                                <Box
+                                    sx={{
+                                        position: 'absolute',
+                                        top: 0,
+                                        left: 0,
+                                        height: '100%',
+                                        width: `${percentage}%`,
+                                        background: isSelected 
+                                            ? 'rgba(255, 255, 255, 0.2)'
+                                            : 'rgba(156, 39, 176, 0.2)',
+                                        transition: 'width 0.3s ease',
+                                        zIndex: 1,
+                                    }}
+                                />
+                                
+                                {/* Option text and percentage */}
+                                <Box
+                                    sx={{
+                                        display: 'flex',
+                                        justifyContent: 'space-between',
+                                        alignItems: 'center',
+                                        width: '100%',
+                                        position: 'relative',
+                                        zIndex: 2,
+                                    }}
+                                >
+                                    <Typography
+                                        variant="body2"
+                                        sx={{
+                                            fontWeight: 500,
+                                            color: isSelected ? '#FFFFFF' : '#F3E5F5',
+                                        }}
+                                    >
+                                        {option.text}
+                                    </Typography>
+                                    <Box
+                                        sx={{
+                                            display: 'flex',
+                                            alignItems: 'center',
+                                            gap: 1,
+                                        }}
+                                    >
+                                        <Typography
+                                            variant="body2"
+                                            sx={{
+                                                fontWeight: 600,
+                                                color: isSelected ? '#FFFFFF' : '#BA68C8',
+                                                minWidth: '45px',
+                                                textAlign: 'right',
+                                            }}
+                                        >
+                                            {percentage.toFixed(1)}%
+                                        </Typography>
+                                        <Typography
+                                            variant="caption"
+                                            sx={{
+                                                color: isSelected ? 'rgba(255, 255, 255, 0.8)' : 'rgba(243, 229, 245, 0.7)',
+                                                minWidth: '30px',
+                                                textAlign: 'right',
+                                            }}
+                                        >
+                                            ({option.votes})
+                                        </Typography>
+                                    </Box>
+                                </Box>
+                            </Button>
                         </Box>
                     );
                 })}
@@ -226,6 +283,14 @@ const PollCard: React.FC<PollCardProps> = ({
                             disabled={voting}
                             variant="outlined"
                             color="secondary"
+                            sx={{
+                                borderColor: '#E040FB',
+                                color: '#E040FB',
+                                '&:hover': {
+                                    background: 'rgba(224, 64, 251, 0.1)',
+                                    borderColor: '#BA68C8',
+                                },
+                            }}
                         >
                             Remove Vote
                         </Button>
