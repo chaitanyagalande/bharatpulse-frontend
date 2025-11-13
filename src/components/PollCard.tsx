@@ -13,7 +13,8 @@ import {
     MenuItem,
     Typography,
 } from "@mui/material";
-import { MoreVert, Edit, Delete } from "@mui/icons-material";
+import { MoreVert, Edit, Delete, Person } from "@mui/icons-material";
+import { useNavigate } from "react-router-dom";
 
 interface PollCardProps {
     pollData: PollWithVoteResponse;
@@ -34,6 +35,7 @@ const PollCard: React.FC<PollCardProps> = ({
     const [menuAnchor, setMenuAnchor] = useState<null | HTMLElement>(null);
     const [voting, setVoting] = useState(false);
     const [error, setError] = useState("");
+    const navigate = useNavigate();
 
     const options = [
         { number: 1, text: poll.optionOne, votes: poll.optionOneVotes },
@@ -105,6 +107,10 @@ const PollCard: React.FC<PollCardProps> = ({
         setMenuAnchor(null);
     };
 
+    const handleUsernameClick = (userId: number) => {
+        navigate(`/profile/${userId}`);
+    };
+
     return (
         <Card sx={{ mb: 3, position: "relative" }}>
             <CardContent>
@@ -112,15 +118,59 @@ const PollCard: React.FC<PollCardProps> = ({
                     display="flex"
                     justifyContent="space-between"
                     alignItems="flex-start"
+                    sx={{ mb: 1 }}
                 >
-                    <Typography variant="h6" gutterBottom sx={{ pr: 2, flex: 1 }}>
+                    <Typography variant="h6" sx={{ pr: 2, flex: 1 }}>
                         {poll.question}
                     </Typography>
+                    
+                    {/* Username in top right corner */}
+                    <Box
+                        sx={{
+                            display: 'flex',
+                            alignItems: 'center',
+                            gap: 0.5,
+                            cursor: 'pointer',
+                            padding: '4px 8px',
+                            borderRadius: 1,
+                            transition: 'all 0.2s ease',
+                            '&:hover': {
+                                backgroundColor: 'rgba(156, 39, 176, 0.1)',
+                                transform: 'translateY(-1px)',
+                            },
+                        }}
+                        onClick={() => handleUsernameClick(poll.createdBy.id)}
+                    >
+                        <Person sx={{ fontSize: 16, color: '#BA68C8' }} />
+                        <Typography
+                            variant="body2"
+                            sx={{
+                                fontWeight: 600,
+                                color: '#BA68C8',
+                                fontSize: '0.8rem',
+                            }}
+                        >
+                            {poll.createdBy.username}
+                        </Typography>
+                    </Box>
+                </Box>
+
+                <Box
+                    display="flex"
+                    justifyContent="space-between"
+                    alignItems="center"
+                    sx={{ mb: 2 }}
+                >
+                    <Typography variant="body2" color="text.secondary">
+                        {new Date(poll.createdAt).toLocaleDateString()}
+                    </Typography>
+                    
                     {showActions && (
-                        <>
+                        <Box>
                             <IconButton
                                 size="small"
                                 onClick={(e) => setMenuAnchor(e.currentTarget)}
+                                sx={{ color: '#D1C4E9' }}
                             >
                                 <MoreVert />
                             </IconButton>
@@ -141,14 +191,9 @@ const PollCard: React.FC<PollCardProps> = ({
                                     <Delete sx={{ mr: 1 }} /> Delete
                                 </MenuItem>
                             </Menu>
-                        </>
+                        </Box>
                     )}
                 </Box>
-
-                <Typography variant="body2" color="text.secondary" gutterBottom>
-                    By {poll.createdBy.username} •{" "}
-                    {new Date(poll.createdAt).toLocaleDateString()}
-                </Typography>
 
                 <Chip
                     label={poll.city}
