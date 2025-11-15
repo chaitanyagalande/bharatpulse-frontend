@@ -87,6 +87,28 @@ const UserPublicProfile: React.FC = () => {
         setTabValue(newValue);
     };
 
+    // Calculate city stats with created and voted counts
+    const getCityStats = () => {
+        if (!profile) return [];
+
+        return profile.activeCities.map(city => {
+            const createdInCity = createdPolls.filter(poll => 
+                poll.poll.city === city.city
+            );
+            const votedInCity = votedPolls.filter(poll => 
+                poll.poll.city === city.city
+            );
+
+            return {
+                ...city,
+                pollsCreatedCount: createdInCity.length,
+                pollsVotedCount: votedInCity.length,
+            };
+        });
+    };
+
+    const cityStats = getCityStats();
+
     if (loading) {
         return (
             <Container maxWidth="md">
@@ -154,21 +176,37 @@ const UserPublicProfile: React.FC = () => {
                         </Box>
                     </Box>
 
-                    {/* Active Cities */}
-                    {profile.activeCities.length > 0 && (
+                    {/* Active Cities - Minimalistic */}
+                    {cityStats.length > 0 && (
                         <Box mt={2}>
                             <Typography variant="h6" gutterBottom>
                                 Active Cities
                             </Typography>
                             <Box display="flex" gap={1} flexWrap="wrap">
-                                {profile.activeCities.map((city) => (
+                                {cityStats.map((city) => (
                                     <Chip
                                         key={city.city}
-                                        label={`${
-                                            city.city
-                                        } (${city.percentage.toFixed(1)}%)`}
+                                        label={
+                                            <Box sx={{ textAlign: 'center' }}>
+                                                <Typography variant="body2" component="div" fontWeight="medium">
+                                                    {city.city} ({city.percentage.toFixed(1)}%)
+                                                </Typography>
+                                                <Typography variant="caption" component="div" color="text.secondary">
+                                                    Created: {city.pollsCreatedCount} • Voted: {city.pollsVotedCount}
+                                                </Typography>
+                                            </Box>
+                                        }
                                         variant="outlined"
                                         size="small"
+                                        sx={{
+                                            height: 'auto',
+                                            py: 1,
+                                            '& .MuiChip-label': {
+                                                display: 'block',
+                                                whiteSpace: 'normal',
+                                                px: 1.5,
+                                            }
+                                        }}
                                     />
                                 ))}
                             </Box>
@@ -199,7 +237,7 @@ const UserPublicProfile: React.FC = () => {
                                     pollData={pollData}
                                     onVoteUpdate={() => {}}
                                     readOnly={true}
-                                    profileUsername={profile.username} // Add this line
+                                    profileUsername={profile.username}
                                     userMode="EXPLORE" // Always show results in public profile page
                                 />
                             ))
@@ -223,7 +261,8 @@ const UserPublicProfile: React.FC = () => {
                                     pollData={pollData}
                                     onVoteUpdate={() => {}}
                                     readOnly={true}
-                                    profileUsername={profile.username} // Add this line
+                                    profileUsername={profile.username}
+                                    userMode="EXPLORE" // Always show results in public profile page
                                 />
                             ))
                         )}
