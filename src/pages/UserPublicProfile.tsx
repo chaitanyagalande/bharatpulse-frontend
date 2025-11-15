@@ -200,6 +200,7 @@ const UserPublicProfile: React.FC = () => {
                                     onVoteUpdate={() => {}}
                                     readOnly={true}
                                     profileUsername={profile.username} // Add this line
+                                    userMode="EXPLORE" // Always show results in public profile page
                                 />
                             ))
                         )}
