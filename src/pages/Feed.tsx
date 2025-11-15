@@ -57,6 +57,21 @@ const Feed: React.FC = () => {
         }
     };
 
+    // Delete this entire function after implementing websockets
+    // Scroll preservation for vote updates
+    const handleVoteUpdate = () => {
+        const scrollPosition = window.scrollY;
+        
+        // Use requestAnimationFrame for smooth scroll restoration
+        requestAnimationFrame(() => {
+            fetchPolls().then(() => {
+                requestAnimationFrame(() => {
+                    window.scrollTo(0, scrollPosition);
+                });
+            });
+        });
+    };
+
     return (
         <Container maxWidth="md">
             <Box sx={{ my: 4 }}>
@@ -153,7 +168,8 @@ const Feed: React.FC = () => {
                         <PollCard
                             key={pollData.poll.id}
                             pollData={pollData}
-                            onVoteUpdate={fetchPolls}
+                            // Delete this line after implementing websockets
+                            onVoteUpdate={handleVoteUpdate} // Use the scroll-preserving function
                             userMode={user?.mode}
                         />
                     ))
