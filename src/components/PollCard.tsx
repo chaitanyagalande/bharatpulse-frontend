@@ -23,7 +23,8 @@ interface PollCardProps {
     onDelete?: (pollId: number) => void;
     showActions?: boolean;
     readOnly?: boolean;
-    profileUsername?: string; // Add this to pass the profile username from UserPublicProfile
+    profileUsername?: string;
+    userMode?: 'LOCAL' | 'EXPLORE'; // Add user mode prop
 }
 
 const PollCard: React.FC<PollCardProps> = ({
@@ -33,7 +34,8 @@ const PollCard: React.FC<PollCardProps> = ({
     onDelete,
     showActions = false,
     readOnly = false,
-    profileUsername, // Add this prop
+    profileUsername,
+    userMode = 'LOCAL', // Default to LOCAL mode
 }) => {
     const { poll, selectedOption } = pollData;
     const [menuAnchor, setMenuAnchor] = useState<null | HTMLElement>(null);
@@ -65,6 +67,9 @@ const PollCard: React.FC<PollCardProps> = ({
     ];
 
     const totalVotes = options.reduce((sum, opt) => sum + opt.votes, 0);
+
+    // Determine if we should show results
+    const shouldShowResults = userMode === 'EXPLORE' || selectedOption !== null;
 
     const handleVote = async (optionNumber: number) => {
         if (voting || readOnly) {
@@ -261,23 +266,25 @@ const PollCard: React.FC<PollCardProps> = ({
                                     cursor: readOnly ? "default" : "pointer",
                                 }}
                             >
-                                {/* Progress bar background */}
-                                <Box
-                                    sx={{
-                                        position: "absolute",
-                                        top: 0,
-                                        left: 0,
-                                        height: "100%",
-                                        width: `${percentage}%`,
-                                        background: isSelected
-                                            ? "rgba(255, 255, 255, 0.2)"
-                                            : readOnly
-                                            ? "rgba(255, 255, 255, 0.05)"
-                                            : "rgba(156, 39, 176, 0.2)",
-                                        transition: "width 0.3s ease",
-                                        zIndex: 1,
-                                    }}
-                                />
+                                {/* Progress bar background - only show if results should be visible */}
+                                {shouldShowResults && (
+                                    <Box
+                                        sx={{
+                                            position: "absolute",
+                                            top: 0,
+                                            left: 0,
+                                            height: "100%",
+                                            width: `${percentage}%`,
+                                            background: isSelected
+                                                ? "rgba(255, 255, 255, 0.2)"
+                                                : readOnly
+                                                ? "rgba(255, 255, 255, 0.05)"
+                                                : "rgba(156, 39, 176, 0.2)",
+                                            transition: "width 0.3s ease",
+                                            zIndex: 1,
+                                        }}
+                                    />
+                                )}
 
                                 {/* Option text and percentage */}
                                 <Box
@@ -315,43 +322,50 @@ const PollCard: React.FC<PollCardProps> = ({
                                             </Typography>
                                         )}
                                     </Typography>
-                                    <Box
-                                        sx={{
-                                            display: "flex",
-                                            alignItems: "center",
-                                            gap: 1,
-                                        }}
-                                    >
-                                        <Typography
-                                            variant="body2"
+                                    
+                                    {/* Show percentage and votes only if results should be visible */}
+                                    {shouldShowResults ? (
+                                        <Box
                                             sx={{
-                                                fontWeight: 600,
-                                                color: isSelected
-                                                    ? "#FFFFFF"
-                                                    : readOnly
-                                                    ? "rgba(255, 255, 255, 0.4)"
-                                                    : "#BA68C8",
-                                                minWidth: "45px",
-                                                textAlign: "right",
+                                                display: "flex",
+                                                alignItems: "center",
+                                                gap: 1,
                                             }}
                                         >
-                                            {percentage.toFixed(1)}%
-                                        </Typography>
-                                        <Typography
-                                            variant="caption"
-                                            sx={{
-                                                color: isSelected
-                                                    ? "rgba(255, 255, 255, 0.8)"
-                                                    : readOnly
-                                                    ? "rgba(255, 255, 255, 0.3)"
-                                                    : "rgba(243, 229, 245, 0.7)",
-                                                minWidth: "30px",
-                                                textAlign: "right",
-                                            }}
-                                        >
-                                            ({option.votes})
-                                        </Typography>
-                                    </Box>
+                                            <Typography
+                                                variant="body2"
+                                                sx={{
+                                                    fontWeight: 600,
+                                                    color: isSelected
+                                                        ? "#FFFFFF"
+                                                        : readOnly
+                                                        ? "rgba(255, 255, 255, 0.4)"
+                                                        : "#BA68C8",
+                                                    minWidth: "45px",
+                                                    textAlign: "right",
+                                                }}
+                                            >
+                                                {percentage.toFixed(1)}%
+                                            </Typography>
+                                            <Typography
+                                                variant="caption"
+                                                sx={{
+                                                    color: isSelected
+                                                        ? "rgba(255, 255, 255, 0.8)"
+                                                        : readOnly
+                                                        ? "rgba(255, 255, 255, 0.3)"
+                                                        : "rgba(243, 229, 245, 0.7)",
+                                                    minWidth: "30px",
+                                                    textAlign: "right",
+                                                }}
+                                            >
+                                                ({option.votes})
+                                            </Typography>
+                                        </Box>
+                                    ) : (
+                                        // Show placeholder or nothing when results are hidden
+                                        <Box sx={{ minWidth: "75px" }}></Box>
+                                    )}
                                 </Box>
                             </Button>
 
@@ -379,9 +393,17 @@ const PollCard: React.FC<PollCardProps> = ({
                     alignItems="center"
                     mt={2}
                 >
-                    <Typography variant="body2" color="text.secondary">
-                        {totalVotes} total votes
-                    </Typography>
+                    {/* Show total votes only if results should be visible */}
+                    {shouldShowResults ? (
+                        <Typography variant="body2" color="text.secondary">
+                            {totalVotes} total votes
+                        </Typography>
+                    ) : (
+                        <Typography variant="body2" color="text.secondary">
+                            Vote to see results
+                        </Typography>
+                    )}
+                    
                     {selectedOption && !readOnly && (
                         <Button
                             size="small"
