@@ -1,7 +1,7 @@
 import { useState } from "react";
-import type { Poll } from "../types";
+import type { PollCreateRequest } from "../types";
 import { pollsAPI } from "../services/api";
-import { Alert, Box, Button, Dialog, DialogActions, DialogContent, DialogTitle, TextField } from "@mui/material";
+import { Alert, Box, Button, Chip, Dialog, DialogActions, DialogContent, DialogTitle, TextField } from "@mui/material";
 import { Add, Remove } from "@mui/icons-material";
 
 interface CreatePollDialogProps {
@@ -22,6 +22,8 @@ const CreatePollDialog: React.FC<CreatePollDialogProps> = ({
     optionThree: '',
     optionFour: '',
   });
+  const [tags, setTags] = useState<string[]>([]);
+  const [currentTag, setCurrentTag] = useState('');
   const [optionsCount, setOptionsCount] = useState(2);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
@@ -32,15 +34,19 @@ const CreatePollDialog: React.FC<CreatePollDialogProps> = ({
     setError('');
 
     try {
-      const pollData: Partial<Poll> = {
-        question: formData.question.trim(),
-        optionOne: formData.optionOne.trim(),
-        optionTwo: formData.optionTwo.trim(),
-        optionThree: optionsCount >= 3 && formData.optionThree.trim() ? formData.optionThree.trim() : undefined,
-        optionFour: optionsCount >= 4 && formData.optionFour.trim() ? formData.optionFour.trim() : undefined,
+      const pollData: PollCreateRequest = {
+        poll: {
+          question: formData.question.trim(),
+          optionOne: formData.optionOne.trim(),
+          optionTwo: formData.optionTwo.trim(),
+          optionThree: optionsCount >= 3 && formData.optionThree.trim() ? formData.optionThree.trim() : undefined,
+          optionFour: optionsCount >= 4 && formData.optionFour.trim() ? formData.optionFour.trim() : undefined,
+          // city is automatically assigned by the API
+        },
+        tags: tags
       };
 
-      await pollsAPI.createPoll(pollData as Poll);
+      await pollsAPI.createPoll(pollData);
       onPollCreated();
       handleClose();
     } catch (err: any) {
@@ -58,9 +64,30 @@ const CreatePollDialog: React.FC<CreatePollDialogProps> = ({
       optionThree: '',
       optionFour: '',
     });
+    setTags([]);
+    setCurrentTag('');
     setOptionsCount(2);
     setError('');
     onClose();
+  };
+
+  const handleAddTag = () => {
+    const trimmedTag = currentTag.trim();
+    if (trimmedTag && !tags.includes(trimmedTag)) {
+      setTags([...tags, trimmedTag]);
+      setCurrentTag('');
+    }
+  };
+
+  const handleRemoveTag = (tagToRemove: string) => {
+    setTags(tags.filter(tag => tag !== tagToRemove));
+  };
+
+  const handleTagKeyPress = (e: React.KeyboardEvent) => {
+    if (e.key === 'Enter') {
+      e.preventDefault();
+      handleAddTag();
+    }
   };
 
   const canAddOption = optionsCount < 4;
@@ -151,6 +178,45 @@ const CreatePollDialog: React.FC<CreatePollDialogProps> = ({
             )}
           </Box>
 
+          <Box sx={{ mb: 2 }}>
+            <Box display="flex" gap={1} sx={{ mb: 1 }}>
+              <TextField
+                margin="dense"
+                label="Add Tag"
+                type="text"
+                variant="outlined"
+                value={currentTag}
+                onChange={(e) => setCurrentTag(e.target.value)}
+                onKeyPress={handleTagKeyPress}
+                placeholder="Enter tag and press Enter or click Add"
+                sx={{ flexGrow: 1 }}
+              />
+              <Button
+                onClick={handleAddTag}
+                variant="outlined"
+                disabled={!currentTag.trim()}
+                sx={{ mt: 1 }}
+              >
+                Add
+              </Button>
+            </Box>
+            
+            {tags.length > 0 && (
+              <Box sx={{ mt: 1 }}>
+                {tags.map((tag, index) => (
+                  <Chip
+                    key={index}
+                    label={tag}
+                    onDelete={() => handleRemoveTag(tag)}
+                    variant="outlined"
+                    size="small"
+                    sx={{ mr: 1, mb: 1 }}
+                  />
+                ))}
+              </Box>
+            )}
+          </Box>
+
           <Box display="flex" gap={1}>
             {canAddOption && (
               <Button
@@ -193,4 +259,3 @@ const CreatePollDialog: React.FC<CreatePollDialogProps> = ({
 };
 
 export default CreatePollDialog;
-

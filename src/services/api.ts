@@ -1,5 +1,5 @@
 import axios from "axios";
-import type { CityRequest, LoginRequest, LoginResponse, PasswordUpdateRequest, Poll, PollWithVoteResponse, RegisterRequest, UsernameUpdateRequest, UserPublicProfileResponse, Vote } from "../types";
+import type { CityRequest, LoginRequest, LoginResponse, PasswordUpdateRequest, Poll, PollCreateRequest, PollEditRequest, PollWithVoteResponse, RegisterRequest, Tag, UsernameUpdateRequest, UserPublicProfileResponse, Vote } from "../types";
 
 const API_BASE_URL = 'http://localhost:8080/api';
 
@@ -57,22 +57,25 @@ export const profileAPI = {
 };
 
 export const pollsAPI = {
-    createPoll: (poll: Poll): Promise<Poll> => 
+    createPoll: (poll: PollCreateRequest): Promise<Poll> => 
         api.post('/polls/create', poll).then(res => res.data),
 
     getPollFeed: (sortBy: string = "latest"): Promise<PollWithVoteResponse[]> => 
-        api.get(`/polls/feed?sortBy=${sortBy}`).then(res => res.data),
+        api.get(`/polls/feed?sortBy=${encodeURIComponent(sortBy)}`).then(res => res.data),
 
     getMyPolls: (sortBy: string = 'latest'): Promise<PollWithVoteResponse[]> => 
-        api.get(`/polls/my-polls?sortBy=${sortBy}`).then(res => res.data),
+        api.get(`/polls/my-polls?sortBy=${encodeURIComponent(sortBy)}`).then(res => res.data),
 
     getMyVotedPolls: (sortBy: string = 'latestvoted'): Promise<PollWithVoteResponse[]> => 
-        api.get(`/polls/my-votes?sortBy=${sortBy}`).then(res => res.data),
+        api.get(`/polls/my-votes?sortBy=${encodeURIComponent(sortBy)}`).then(res => res.data),
 
     searchPolls: (query: string, sortBy: string = "latest"): Promise<PollWithVoteResponse[]> => 
-        api.get(`/polls/search?query=${query}&sortBy=${sortBy}`).then(res => res.data),
+        api.get(`/polls/search?query=${encodeURIComponent(query)}&sortBy=${encodeURIComponent(sortBy)}`).then(res => res.data),
 
-    editPoll: (pollId: number, updatedPoll: Poll): Promise<Poll> => 
+    filterPolls: (tags: string[], query: string = "", sortBy: string = "latest"): Promise<PollWithVoteResponse[]> =>
+        api.get(`/polls/filter?tags=${tags.map(tag => encodeURIComponent(tag)).join(',')}&query=${encodeURIComponent(query)}&sortBy=${encodeURIComponent(sortBy)}`).then(res => res.data),
+
+    editPoll: (pollId: number, updatedPoll: PollEditRequest): Promise<Poll> => 
         api.put(`/polls/edit/${pollId}`, updatedPoll).then(res => res.data),
 
     deletePoll: (pollId: number) => 
@@ -89,11 +92,16 @@ export const votesAPI = {
 
 export const publicProfileAPI = {
   getUserProfile: (username: string): Promise<UserPublicProfileResponse> => 
-    api.get(`/profile/${username}`).then(res => res.data),
+    api.get(`/profile/${encodeURIComponent(username)}`).then(res => res.data),
   
   getPollsCreatedByUser: (userId: number, sortBy: string = 'latest'): Promise<PollWithVoteResponse[]> => 
-    api.get(`/profile/${userId}/polls-created?sortBy=${sortBy}`).then(res => res.data),
+    api.get(`/profile/${userId}/polls-created?sortBy=${encodeURIComponent(sortBy)}`).then(res => res.data),
   
   getPollsVotedByUser: (userId: number, sortBy: string = 'latest'): Promise<PollWithVoteResponse[]> => 
-    api.get(`/profile/${userId}/polls-voted?sortBy=${sortBy}`).then(res => res.data),
+    api.get(`/profile/${userId}/polls-voted?sortBy=${encodeURIComponent(sortBy)}`).then(res => res.data),
 };
+
+export const tagsAPI = {
+    getPopularTags: (): Promise<Tag[]> => 
+        api.get(`/tags/popular`).then(res => res.data),
+}

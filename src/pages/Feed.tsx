@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from "react";
-import { pollsAPI } from "../services/api";
-import type { PollWithVoteResponse } from "../types";
+import { pollsAPI, tagsAPI } from "../services/api";
+import type { PollWithVoteResponse, Tag } from "../types";
 import {
     Box,
     Chip,
@@ -12,7 +12,7 @@ import {
     ToggleButtonGroup,
     Typography,
 } from "@mui/material";
-import { AccessTime, LocationOn, Public, Search, TrendingUp } from "@mui/icons-material";
+import { AccessTime, LocationOn, Public, Search, TrendingUp, LocalOffer } from "@mui/icons-material";
 import PollCard from "../components/PollCard";
 import { useAuth } from "../context/AuthContext";
 
@@ -20,16 +20,38 @@ const Feed: React.FC = () => {
     const [polls, setPolls] = useState<PollWithVoteResponse[]>([]);
     const [sortBy, setSortBy] = useState("latest");
     const [searchQuery, setSearchQuery] = useState("");
+    const [selectedTags, setSelectedTags] = useState<string[]>([]);
+    const [popularTags, setPopularTags] = useState<Tag[]>([]);
     const [loading, setLoading] = useState(false);
     const [initialLoad, setInitialLoad] = useState(true);
     const { user } = useAuth();
 
+    // Fetch popular tags on component mount
+    useEffect(() => {
+        const fetchPopularTags = async () => {
+            try {
+                const tags = await tagsAPI.getPopularTags();
+                setPopularTags(tags);
+            } catch (error) {
+                console.error("Failed to fetch popular tags:", error);
+            }
+        };
+        fetchPopularTags();
+    }, []);
+
     const fetchPolls = async () => {
         setLoading(true);
         try {
-            const data = searchQuery
-                ? await pollsAPI.searchPolls(searchQuery, sortBy)
-                : await pollsAPI.getPollFeed(sortBy);
+            let data;
+            if (selectedTags.length > 0) {
+                // Use filterPolls API when tags are selected
+                data = await pollsAPI.filterPolls(selectedTags, searchQuery, sortBy);
+            } else {
+                // Use searchPolls API when no tags are selected
+                data = searchQuery
+                    ? await pollsAPI.searchPolls(searchQuery, sortBy)
+                    : await pollsAPI.getPollFeed(sortBy);
+            }
             setPolls(data);
         } catch (error) {
             console.error("Failed to fetch polls:", error);
@@ -41,7 +63,7 @@ const Feed: React.FC = () => {
 
     useEffect(() => {
         fetchPolls();
-    }, [sortBy]);
+    }, [sortBy, selectedTags]);
 
     useEffect(() => {
         const timeoutId = setTimeout(fetchPolls, 500);
@@ -55,6 +77,18 @@ const Feed: React.FC = () => {
         if (newSortBy !== null) {
             setSortBy(newSortBy);
         }
+    };
+
+    const handleTagClick = (tagName: string) => {
+        setSelectedTags(prev => 
+            prev.includes(tagName) 
+                ? prev.filter(tag => tag !== tagName) // Remove if already selected
+                : [...prev, tagName] // Add if not selected
+        );
+    };
+
+    const clearAllTags = () => {
+        setSelectedTags([]);
     };
 
     // Delete this entire function after implementing websockets
@@ -155,6 +189,59 @@ const Feed: React.FC = () => {
                     </ToggleButtonGroup>
                 </Box>
 
+                {/* Popular Tags Section */}
+                <Box sx={{ mb: 3 }}>
+                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 1 }}>
+                        <LocalOffer sx={{ fontSize: 20, color: '#9C27B0' }} />
+                        <Typography variant="h6" fontWeight="bold">
+                            Popular Tags
+                        </Typography>
+                        {selectedTags.length > 0 && (
+                            <Chip
+                                label="Clear all"
+                                size="small"
+                                variant="outlined"
+                                onClick={clearAllTags}
+                                sx={{ 
+                                    ml: 1,
+                                    cursor: 'pointer',
+                                    borderColor: '#9C27B0',
+                                    color: '#9C27B0'
+                                }}
+                            />
+                        )}
+                    </Box>
+                    
+                    <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 1 }}>
+                        {popularTags.map((tag) => (
+                            <Chip
+                                key={tag.id}
+                                label={`${tag.name} (${tag.usageCount})`}
+                                clickable
+                                variant={selectedTags.includes(tag.name) ? "filled" : "outlined"}
+                                color={selectedTags.includes(tag.name) ? "primary" : "default"}
+                                onClick={() => handleTagClick(tag.name)}
+                                sx={{
+                                    fontWeight: selectedTags.includes(tag.name) ? 'bold' : 'normal',
+                                    transition: 'all 0.2s ease',
+                                    '&:hover': {
+                                        transform: 'translateY(-1px)',
+                                    }
+                                }}
+                            />
+                        ))}
+                    </Box>
+
+                    {/* Selected Tags Indicator */}
+                    {selectedTags.length > 0 && (
+                        <Box sx={{ mt: 2 }}>
+                            <Typography variant="body2" color="text.secondary" sx={{ mb: 1 }}>
+                                Filtering by: {selectedTags.join(', ')}
+                            </Typography>
+                        </Box>
+                    )}
+                </Box>
+
                 {initialLoad ? (
                     <Box display="flex" justifyContent="center" my={4}>
                         <CircularProgress />
@@ -182,9 +269,13 @@ const Feed: React.FC = () => {
                         align="center"
                         my={4}
                     >
-                        {searchQuery
-                            ? `No polls found for "${searchQuery}"`
-                            : "No polls found. Be the first to create one!"}
+                        {selectedTags.length > 0 
+                            ? searchQuery
+                                ? `No polls found for "${searchQuery}" with selected tags`
+                                : "No polls found with selected tags"
+                            : searchQuery
+                                ? `No polls found for "${searchQuery}"`
+                                : "No polls found. Be the first to create one!"}
                     </Typography>
                 )}
             </Box>

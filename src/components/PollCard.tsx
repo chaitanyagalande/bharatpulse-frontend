@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import type { PollWithVoteResponse } from "../types";
 import { pollsAPI, votesAPI } from "../services/api";
 import {
@@ -42,6 +42,48 @@ const PollCard: React.FC<PollCardProps> = ({
     const [voting, setVoting] = useState(false);
     const [error, setError] = useState("");
     const navigate = useNavigate();
+
+    // Function to calculate relative time
+    const getRelativeTime = (dateString: string): string => {
+        const date = new Date(dateString);
+        const now = new Date();
+        const diffInSeconds = Math.floor((now.getTime() - date.getTime()) / 1000);
+        
+        if (diffInSeconds < 60) {
+            return 'just now';
+        }
+        
+        const diffInMinutes = Math.floor(diffInSeconds / 60);
+        if (diffInMinutes < 60) {
+            return `${diffInMinutes} min. ago`;
+        }
+        
+        const diffInHours = Math.floor(diffInMinutes / 60);
+        if (diffInHours < 24) {
+            return `${diffInHours} hr. ago`;
+        }
+        
+        const diffInDays = Math.floor(diffInHours / 24);
+        if (diffInDays < 7) {
+            return `${diffInDays} day${diffInDays > 1 ? 's' : ''} ago`;
+        }
+        
+        const diffInWeeks = Math.floor(diffInDays / 7);
+        if (diffInWeeks < 4) {
+            return `${diffInWeeks} week${diffInWeeks > 1 ? 's' : ''} ago`;
+        }
+        
+        const diffInMonths = Math.floor(diffInDays / 30);
+        if (diffInMonths < 12) {
+            return `${diffInMonths} month${diffInMonths > 1 ? 's' : ''} ago`;
+        }
+        
+        const diffInYears = Math.floor(diffInDays / 365);
+        return `${diffInYears} year${diffInYears > 1 ? 's' : ''} ago`;
+    };
+
+    // Memoize the relative time to avoid recalculating on every render
+    const relativeTime = useMemo(() => getRelativeTime(poll.createdAt), [poll.createdAt]);
 
     const options = [
         { number: 1, text: poll.optionOne, votes: poll.optionOneVotes },
@@ -129,6 +171,7 @@ const PollCard: React.FC<PollCardProps> = ({
     return (
         <Card sx={{ mb: 3, position: "relative" }}>
             <CardContent>
+                {/* Top section: Question, Username, and City in one line */}
                 <Box
                     display="flex"
                     justifyContent="space-between"
@@ -139,47 +182,87 @@ const PollCard: React.FC<PollCardProps> = ({
                         {poll.question}
                     </Typography>
 
-                    {/* Username in top right corner */}
-                    <Box
-                        sx={{
-                            display: "flex",
-                            alignItems: "center",
-                            gap: 0.5,
-                            cursor: "pointer",
-                            padding: "4px 8px",
-                            borderRadius: 1,
-                            transition: "all 0.2s ease",
-                            "&:hover": {
-                                backgroundColor: "rgba(156, 39, 176, 0.1)",
-                                transform: "translateY(-1px)",
-                            },
-                        }}
-                        onClick={() => handleUsernameClick(poll.createdBy.username)}
-                    >
-                        <Person sx={{ fontSize: 16, color: "#BA68C8" }} />
-                        <Typography
-                            variant="body2"
+                    {/* Username and City inline in top right corner */}
+                    <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
+                        <Chip
+                            label={poll.city}
+                            size="small"
+                            color="primary"
+                            variant="outlined"
                             sx={{
-                                fontWeight: 600,
+                                backgroundColor: "rgba(156, 39, 176, 0.1)",
                                 color: "#BA68C8",
-                                fontSize: "0.8rem",
+                                border: "1px solid rgba(156, 39, 176, 0.3)",
+                                fontWeight: 500,
                             }}
+                        />
+                        <Box
+                            sx={{
+                                display: "flex",
+                                alignItems: "center",
+                                gap: 0.5,
+                                cursor: "pointer",
+                                padding: "4px 8px",
+                                borderRadius: 1,
+                                transition: "all 0.2s ease",
+                                "&:hover": {
+                                    backgroundColor: "rgba(156, 39, 176, 0.1)",
+                                    transform: "translateY(-1px)",
+                                },
+                            }}
+                            onClick={() => handleUsernameClick(poll.createdBy.username)}
                         >
-                            {poll.createdBy.username}
-                        </Typography>
+                            <Person sx={{ fontSize: 16, color: "#BA68C8" }} />
+                            <Typography
+                                variant="body2"
+                                sx={{
+                                    fontWeight: 600,
+                                    color: "#BA68C8",
+                                    fontSize: "0.8rem",
+                                }}
+                            >
+                                {poll.createdBy.username}
+                            </Typography>
+                        </Box>
                     </Box>
                 </Box>
 
+                {/* Middle section: Date, Actions, and Tags */}
                 <Box
                     display="flex"
                     justifyContent="space-between"
-                    alignItems="center"
+                    alignItems="flex-start"
                     sx={{ mb: 2 }}
                 >
-                    <Typography variant="body2" color="text.secondary">
-                        {new Date(poll.createdAt).toLocaleDateString()}
-                    </Typography>
+                    {/* Relative time and Tags on the left */}
+                    <Box sx={{ display: "flex", flexDirection: "column", gap: 1, flex: 1 }}>
+                        <Typography variant="body2" color="text.secondary">
+                            {relativeTime}
+                        </Typography>
+                        
+                        {/* Tags below the relative time */}
+                        {poll.tags && poll.tags.length > 0 && (
+                            <Box sx={{ display: "flex", flexWrap: "wrap", gap: 0.5 }}>
+                                {poll.tags.map((tag, index) => (
+                                    <Chip
+                                        key={index}
+                                        label={tag}
+                                        size="small"
+                                        color="primary"
+                                        variant="outlined"
+                                        sx={{
+                                            backgroundColor: "rgba(156, 39, 176, 0.1)",
+                                            color: "#BA68C8",
+                                            border: "1px solid rgba(156, 39, 176, 0.3)",
+                                            fontWeight: 500,
+                                        }}
+                                    />
+                                ))}
+                            </Box>
+                        )}
+                    </Box>
 
+                    {/* Actions menu on the right */}
                     {showActions && (
                         <Box>
                             <IconButton
@@ -209,14 +292,6 @@ const PollCard: React.FC<PollCardProps> = ({
                         </Box>
                     )}
                 </Box>
-
-                <Chip
-                    label={poll.city}
-                    size="small"
-                    sx={{ mb: 2 }}
-                    color="primary"
-                    variant="outlined"
-                />
 
                 {error && (
                     <Alert severity="error" sx={{ mb: 2 }}>

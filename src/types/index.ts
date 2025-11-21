@@ -41,6 +41,27 @@ export interface Poll {
   optionFourVotes?: number;
 }
 
+export interface PollCreateRequest {
+  poll: {
+    question: string;
+    optionOne: string;
+    optionTwo: string;
+    optionThree?: string;
+    optionFour?: string;
+    // Don't include server-generated fields like:
+    // id, createdBy, createdAt, *Votes fields
+  };
+  tags: string[];
+}
+
+export interface PollEditRequest {
+  question: string;
+  optionOne: string;
+  optionTwo: string;
+  optionThree?: string;
+  optionFour?: string;
+}
+
 export interface CreatedByResponse {
   id: number;
   username: string;
@@ -60,6 +81,7 @@ export interface PollResponse {
   optionTwoVotes: number;
   optionThreeVotes?: number;
   optionFourVotes?: number;
+  tags: string[];
 }
 
 export interface PollWithVoteResponse {
@@ -103,4 +125,11 @@ export interface CityActivityResponse {
   pollsCreatedCount: number;
   pollsVotedCount: number;
   percentage: number;
+}
+
+export interface Tag {
+  id: number;
+  name: string;
+  city: string;
+  usageCount: number;
 }
