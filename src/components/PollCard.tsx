@@ -1,6 +1,6 @@
 import { useState, useMemo } from "react";
-import type { PollWithVoteResponse } from "../types";
-import { pollsAPI, votesAPI } from "../services/api";
+import type { PollWithVoteResponse, CommentResponse } from "../types";
+import { pollsAPI, votesAPI, commentsAPI } from "../services/api";
 import {
     Alert,
     Box,
@@ -12,9 +12,21 @@ import {
     Menu,
     MenuItem,
     Typography,
+    Dialog,
+    DialogContent,
+    DialogTitle,
+    TextField,
+    List,
+    ListItem,
+    ListItemText,
+    ListItemSecondaryAction,
+    Divider,
+    CircularProgress,
+    InputAdornment,
 } from "@mui/material";
-import { MoreVert, Edit, Delete, Person } from "@mui/icons-material";
+import { MoreVert, Edit, Delete, Person, Comment as CommentIcon, Send, Close } from "@mui/icons-material";
 import { useNavigate } from "react-router-dom";
+import { useAuth } from "../context/AuthContext";
 
 interface PollCardProps {
     pollData: PollWithVoteResponse;
@@ -24,7 +36,7 @@ interface PollCardProps {
     showActions?: boolean;
     readOnly?: boolean;
     profileUsername?: string;
-    userMode?: 'LOCAL' | 'EXPLORE'; // Add user mode prop
+    userMode?: 'LOCAL' | 'EXPLORE';
 }
 
 const PollCard: React.FC<PollCardProps> = ({
@@ -35,13 +47,19 @@ const PollCard: React.FC<PollCardProps> = ({
     showActions = false,
     readOnly = false,
     profileUsername,
-    userMode = 'LOCAL', // Default to LOCAL mode
+    userMode = 'LOCAL',
 }) => {
     const { poll, selectedOption } = pollData;
     const [menuAnchor, setMenuAnchor] = useState<null | HTMLElement>(null);
     const [voting, setVoting] = useState(false);
     const [error, setError] = useState("");
+    const [commentsOpen, setCommentsOpen] = useState(false);
+    const [comments, setComments] = useState<CommentResponse[]>([]);
+    const [loadingComments, setLoadingComments] = useState(false);
+    const [newComment, setNewComment] = useState("");
+    const [submittingComment, setSubmittingComment] = useState(false);
     const navigate = useNavigate();
+    const { user } = useAuth();
 
     // Function to calculate relative time
     const getRelativeTime = (dateString: string): string => {
@@ -168,339 +186,533 @@ const PollCard: React.FC<PollCardProps> = ({
         navigate(`/profile/${username}`);
     };
 
-    return (
-        <Card sx={{ mb: 3, position: "relative" }}>
-            <CardContent>
-                {/* Top section: Question, Username, and City in one line */}
-                <Box
-                    display="flex"
-                    justifyContent="space-between"
-                    alignItems="flex-start"
-                    sx={{ mb: 1 }}
-                >
-                    <Typography variant="h6" sx={{ pr: 2, flex: 1 }}>
-                        {poll.question}
-                    </Typography>
+    // Comment functionality
+    const handleOpenComments = async () => {
+        setCommentsOpen(true);
+        setLoadingComments(true);
+        try {
+            const commentsData = await commentsAPI.getComments(poll.id);
+            setComments(commentsData);
+        } catch (err: any) {
+            setError("Failed to load comments");
+        } finally {
+            setLoadingComments(false);
+        }
+    };
 
-                    {/* Username and City inline in top right corner */}
-                    <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
-                        <Chip
-                            label={poll.city}
-                            size="small"
-                            color="primary"
-                            variant="outlined"
-                            sx={{
-                                backgroundColor: "rgba(156, 39, 176, 0.1)",
-                                color: "#BA68C8",
-                                border: "1px solid rgba(156, 39, 176, 0.3)",
-                                fontWeight: 500,
-                            }}
-                        />
-                        <Box
-                            sx={{
-                                display: "flex",
-                                alignItems: "center",
-                                gap: 0.5,
-                                cursor: "pointer",
-                                padding: "4px 8px",
-                                borderRadius: 1,
-                                transition: "all 0.2s ease",
-                                "&:hover": {
-                                    backgroundColor: "rgba(156, 39, 176, 0.1)",
-                                    transform: "translateY(-1px)",
-                                },
-                            }}
-                            onClick={() => handleUsernameClick(poll.createdBy.username)}
-                        >
-                            <Person sx={{ fontSize: 16, color: "#BA68C8" }} />
-                            <Typography
-                                variant="body2"
+    const handleCloseComments = () => {
+        setCommentsOpen(false);
+        setNewComment("");
+    };
+
+    const handleAddComment = async () => {
+        if (!newComment.trim()) return;
+
+        setSubmittingComment(true);
+        try {
+            const newCommentData = await commentsAPI.addComment(poll.id, { content: newComment.trim() });
+            setComments(prev => [newCommentData, ...prev]);
+            setNewComment("");
+            // Update comment count in poll data
+            poll.commentCount += 1;
+        } catch (err: any) {
+            setError("Failed to add comment");
+        } finally {
+            setSubmittingComment(false);
+        }
+    };
+
+    const handleDeleteComment = async (commentId: number) => {
+        try {
+            await commentsAPI.deleteComment(commentId);
+            setComments(prev => prev.filter(comment => comment.id !== commentId));
+            // Update comment count in poll data
+            poll.commentCount -= 1;
+        } catch (err: any) {
+            setError("Failed to delete comment");
+        }
+    };
+
+    const getCommentRelativeTime = (dateString: string) => {
+        return getRelativeTime(dateString);
+    };
+
+    // Check if current user is the author of a comment
+    const isCurrentUserComment = (comment: CommentResponse) => {
+        return comment.username === user?.username;
+    };
+
+    return (
+        <>
+            <Card sx={{ mb: 3, position: "relative" }}>
+                <CardContent>
+                    {/* Top section: Question, Username, and City in one line */}
+                    <Box
+                        display="flex"
+                        justifyContent="space-between"
+                        alignItems="flex-start"
+                        sx={{ mb: 1 }}
+                    >
+                        <Typography variant="h6" sx={{ pr: 2, flex: 1 }}>
+                            {poll.question}
+                        </Typography>
+
+                        {/* Username and City inline in top right corner */}
+                        <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
+                            <Chip
+                                label={poll.city}
+                                size="small"
+                                color="primary"
+                                variant="outlined"
                                 sx={{
-                                    fontWeight: 600,
+                                    backgroundColor: "rgba(156, 39, 176, 0.1)",
                                     color: "#BA68C8",
-                                    fontSize: "0.8rem",
+                                    border: "1px solid rgba(156, 39, 176, 0.3)",
+                                    fontWeight: 500,
                                 }}
+                            />
+                            <Box
+                                sx={{
+                                    display: "flex",
+                                    alignItems: "center",
+                                    gap: 0.5,
+                                    cursor: "pointer",
+                                    padding: "4px 8px",
+                                    borderRadius: 1,
+                                    transition: "all 0.2s ease",
+                                    "&:hover": {
+                                        backgroundColor: "rgba(156, 39, 176, 0.1)",
+                                        transform: "translateY(-1px)",
+                                    },
+                                }}
+                                onClick={() => handleUsernameClick(poll.createdBy.username)}
                             >
-                                {poll.createdBy.username}
-                            </Typography>
+                                <Person sx={{ fontSize: 16, color: "#BA68C8" }} />
+                                <Typography
+                                    variant="body2"
+                                    sx={{
+                                        fontWeight: 600,
+                                        color: "#BA68C8",
+                                        fontSize: "0.8rem",
+                                    }}
+                                >
+                                    {poll.createdBy.username}
+                                </Typography>
+                            </Box>
                         </Box>
                     </Box>
-                </Box>
 
-                {/* Middle section: Date, Actions, and Tags */}
-                <Box
-                    display="flex"
-                    justifyContent="space-between"
-                    alignItems="flex-start"
-                    sx={{ mb: 2 }}
-                >
-                    {/* Relative time and Tags on the left */}
-                    <Box sx={{ display: "flex", flexDirection: "column", gap: 1, flex: 1 }}>
-                        <Typography variant="body2" color="text.secondary">
-                            {relativeTime}
-                        </Typography>
-                        
-                        {/* Tags below the relative time */}
-                        {poll.tags && poll.tags.length > 0 && (
-                            <Box sx={{ display: "flex", flexWrap: "wrap", gap: 0.5 }}>
-                                {poll.tags.map((tag, index) => (
-                                    <Chip
-                                        key={index}
-                                        label={tag}
-                                        size="small"
-                                        color="primary"
-                                        variant="outlined"
-                                        sx={{
-                                            backgroundColor: "rgba(156, 39, 176, 0.1)",
-                                            color: "#BA68C8",
-                                            border: "1px solid rgba(156, 39, 176, 0.3)",
-                                            fontWeight: 500,
+                    {/* Middle section: Date, Actions, and Tags */}
+                    <Box
+                        display="flex"
+                        justifyContent="space-between"
+                        alignItems="flex-start"
+                        sx={{ mb: 2 }}
+                    >
+                        {/* Relative time and Tags on the left */}
+                        <Box sx={{ display: "flex", flexDirection: "column", gap: 1, flex: 1 }}>
+                            <Typography variant="body2" color="text.secondary">
+                                {relativeTime}
+                            </Typography>
+                            
+                            {/* Tags below the relative time */}
+                            {poll.tags && poll.tags.length > 0 && (
+                                <Box sx={{ display: "flex", flexWrap: "wrap", gap: 0.5 }}>
+                                    {poll.tags.map((tag, index) => (
+                                        <Chip
+                                            key={index}
+                                            label={tag}
+                                            size="small"
+                                            color="primary"
+                                            variant="outlined"
+                                            sx={{
+                                                backgroundColor: "rgba(156, 39, 176, 0.1)",
+                                                color: "#BA68C8",
+                                                border: "1px solid rgba(156, 39, 176, 0.3)",
+                                                fontWeight: 500,
+                                            }}
+                                        />
+                                    ))}
+                                </Box>
+                            )}
+                        </Box>
+
+                        {/* Actions menu on the right */}
+                        {showActions && (
+                            <Box>
+                                <IconButton
+                                    size="small"
+                                    onClick={(e) => setMenuAnchor(e.currentTarget)}
+                                    sx={{ color: "#D1C4E9" }}
+                                >
+                                    <MoreVert />
+                                </IconButton>
+                                <Menu
+                                    anchorEl={menuAnchor}
+                                    open={Boolean(menuAnchor)}
+                                    onClose={() => setMenuAnchor(null)}
+                                >
+                                    <MenuItem
+                                        onClick={() => {
+                                            onEdit?.(pollData);
+                                            setMenuAnchor(null);
                                         }}
-                                    />
-                                ))}
+                                    >
+                                        <Edit sx={{ mr: 1 }} /> Edit
+                                    </MenuItem>
+                                    <MenuItem onClick={handleDelete}>
+                                        <Delete sx={{ mr: 1 }} /> Delete
+                                    </MenuItem>
+                                </Menu>
                             </Box>
                         )}
                     </Box>
 
-                    {/* Actions menu on the right */}
-                    {showActions && (
-                        <Box>
-                            <IconButton
-                                size="small"
-                                onClick={(e) => setMenuAnchor(e.currentTarget)}
-                                sx={{ color: "#D1C4E9" }}
+                    {error && (
+                        <Alert severity="error" sx={{ mb: 2 }}>
+                            {error}
+                        </Alert>
+                    )}
+
+                    {options.map((option) => {
+                        const percentage =
+                            totalVotes > 0 ? (option.votes / totalVotes) * 100 : 0;
+                        const isSelected = selectedOption === option.number;
+
+                        return (
+                            <Box
+                                key={option.number}
+                                sx={{ mb: 2, position: "relative" }}
                             >
-                                <MoreVert />
-                            </IconButton>
-                            <Menu
-                                anchorEl={menuAnchor}
-                                open={Boolean(menuAnchor)}
-                                onClose={() => setMenuAnchor(null)}
-                            >
-                                <MenuItem
-                                    onClick={() => {
-                                        onEdit?.(pollData);
-                                        setMenuAnchor(null);
+                                <Button
+                                    fullWidth
+                                    variant={isSelected ? "contained" : "outlined"}
+                                    onClick={() => handleVote(option.number)}
+                                    disabled={voting || readOnly}
+                                    sx={{
+                                        justifyContent: "space-between",
+                                        textTransform: "none",
+                                        py: 1.5,
+                                        px: 2,
+                                        position: "relative",
+                                        overflow: "hidden",
+                                        background: isSelected
+                                            ? "linear-gradient(135deg, #9C27B0 0%, #E040FB 100%)"
+                                            : readOnly
+                                            ? "rgba(255, 255, 255, 0.02)"
+                                            : "rgba(255, 255, 255, 0.05)",
+                                        border: isSelected ? "none" : "1px solid",
+                                        borderColor: readOnly
+                                            ? "rgba(255, 255, 255, 0.1)"
+                                            : "rgba(156, 39, 176, 0.3)",
+                                        "&:hover": readOnly
+                                            ? {}
+                                            : {
+                                                  background: isSelected
+                                                      ? "linear-gradient(135deg, #8E24AA 0%, #D500F9 100%)"
+                                                      : "rgba(156, 39, 176, 0.1)",
+                                                  transform: "translateY(-1px)",
+                                              },
+                                        cursor: readOnly ? "default" : "pointer",
                                     }}
                                 >
-                                    <Edit sx={{ mr: 1 }} /> Edit
-                                </MenuItem>
-                                <MenuItem onClick={handleDelete}>
-                                    <Delete sx={{ mr: 1 }} /> Delete
-                                </MenuItem>
-                            </Menu>
-                        </Box>
-                    )}
-                </Box>
+                                    {/* Progress bar background - only show if results should be visible */}
+                                    {shouldShowResults && (
+                                        <Box
+                                            sx={{
+                                                position: "absolute",
+                                                top: 0,
+                                                left: 0,
+                                                height: "100%",
+                                                width: `${percentage}%`,
+                                                background: isSelected
+                                                    ? "rgba(255, 255, 255, 0.2)"
+                                                    : readOnly
+                                                    ? "rgba(255, 255, 255, 0.05)"
+                                                    : "rgba(156, 39, 176, 0.2)",
+                                                transition: "width 0.3s ease",
+                                                zIndex: 1,
+                                            }}
+                                        />
+                                    )}
 
-                {error && (
-                    <Alert severity="error" sx={{ mb: 2 }}>
-                        {error}
-                    </Alert>
-                )}
+                                    {/* Option text and percentage */}
+                                    <Box
+                                        sx={{
+                                            display: "flex",
+                                            justifyContent: "space-between",
+                                            alignItems: "center",
+                                            width: "100%",
+                                            position: "relative",
+                                            zIndex: 2,
+                                        }}
+                                    >
+                                        <Typography
+                                            variant="body2"
+                                            sx={{
+                                                fontWeight: 500,
+                                                color: isSelected
+                                                    ? "#FFFFFF"
+                                                    : readOnly
+                                                    ? "rgba(255, 255, 255, 0.5)"
+                                                    : "#F3E5F5",
+                                            }}
+                                        >
+                                            {option.text}
+                                            {readOnly && isSelected && profileUsername && (
+                                                <Typography
+                                                    component="span"
+                                                    variant="caption"
+                                                    sx={{
+                                                        ml: 1,
+                                                        fontStyle: "italic",
+                                                    }}
+                                                >
+                                                    (Voted by {profileUsername})
+                                                </Typography>
+                                            )}
+                                        </Typography>
+                                        
+                                        {/* Show percentage and votes only if results should be visible */}
+                                        {shouldShowResults ? (
+                                            <Box
+                                                sx={{
+                                                    display: "flex",
+                                                    alignItems: "center",
+                                                    gap: 1,
+                                                }}
+                                            >
+                                                <Typography
+                                                    variant="body2"
+                                                    sx={{
+                                                        fontWeight: 600,
+                                                        color: isSelected
+                                                            ? "#FFFFFF"
+                                                            : readOnly
+                                                            ? "rgba(255, 255, 255, 0.4)"
+                                                            : "#BA68C8",
+                                                        minWidth: "45px",
+                                                        textAlign: "right",
+                                                    }}
+                                                >
+                                                    {percentage.toFixed(1)}%
+                                                </Typography>
+                                                <Typography
+                                                    variant="caption"
+                                                    sx={{
+                                                        color: isSelected
+                                                            ? "rgba(255, 255, 255, 0.8)"
+                                                            : readOnly
+                                                            ? "rgba(255, 255, 255, 0.3)"
+                                                            : "rgba(243, 229, 245, 0.7)",
+                                                        minWidth: "30px",
+                                                        textAlign: "right",
+                                                    }}
+                                                >
+                                                    ({option.votes})
+                                                </Typography>
+                                            </Box>
+                                        ) : (
+                                            // Show placeholder or nothing when results are hidden
+                                            <Box sx={{ minWidth: "75px" }}></Box>
+                                        )}
+                                    </Box>
+                                </Button>
 
-                {options.map((option) => {
-                    const percentage =
-                        totalVotes > 0 ? (option.votes / totalVotes) * 100 : 0;
-                    const isSelected = selectedOption === option.number;
-
-                    return (
-                        <Box
-                            key={option.number}
-                            sx={{ mb: 2, position: "relative" }}
-                        >
-                            <Button
-                                fullWidth
-                                variant={isSelected ? "contained" : "outlined"}
-                                onClick={() => handleVote(option.number)}
-                                disabled={voting || readOnly}
-                                sx={{
-                                    justifyContent: "space-between",
-                                    textTransform: "none",
-                                    py: 1.5,
-                                    px: 2,
-                                    position: "relative",
-                                    overflow: "hidden",
-                                    background: isSelected
-                                        ? "linear-gradient(135deg, #9C27B0 0%, #E040FB 100%)"
-                                        : readOnly
-                                        ? "rgba(255, 255, 255, 0.02)"
-                                        : "rgba(255, 255, 255, 0.05)",
-                                    border: isSelected ? "none" : "1px solid",
-                                    borderColor: readOnly
-                                        ? "rgba(255, 255, 255, 0.1)"
-                                        : "rgba(156, 39, 176, 0.3)",
-                                    "&:hover": readOnly
-                                        ? {}
-                                        : {
-                                              background: isSelected
-                                                  ? "linear-gradient(135deg, #8E24AA 0%, #D500F9 100%)"
-                                                  : "rgba(156, 39, 176, 0.1)",
-                                              transform: "translateY(-1px)",
-                                          },
-                                    cursor: readOnly ? "default" : "pointer",
-                                }}
-                            >
-                                {/* Progress bar background - only show if results should be visible */}
-                                {shouldShowResults && (
+                                {/* Read-only message */}
+                                {readOnly && (
                                     <Box
                                         sx={{
                                             position: "absolute",
-                                            top: 0,
+                                            top: "100%",
                                             left: 0,
-                                            height: "100%",
-                                            width: `${percentage}%`,
-                                            background: isSelected
-                                                ? "rgba(255, 255, 255, 0.2)"
-                                                : readOnly
-                                                ? "rgba(255, 255, 255, 0.05)"
-                                                : "rgba(156, 39, 176, 0.2)",
-                                            transition: "width 0.3s ease",
-                                            zIndex: 1,
-                                        }}
-                                    />
-                                )}
-
-                                {/* Option text and percentage */}
-                                <Box
-                                    sx={{
-                                        display: "flex",
-                                        justifyContent: "space-between",
-                                        alignItems: "center",
-                                        width: "100%",
-                                        position: "relative",
-                                        zIndex: 2,
-                                    }}
-                                >
-                                    <Typography
-                                        variant="body2"
-                                        sx={{
-                                            fontWeight: 500,
-                                            color: isSelected
-                                                ? "#FFFFFF"
-                                                : readOnly
-                                                ? "rgba(255, 255, 255, 0.5)"
-                                                : "#F3E5F5",
+                                            right: 0,
+                                            textAlign: "center",
+                                            mt: 0.5,
                                         }}
                                     >
-                                        {option.text}
-                                        {readOnly && isSelected && profileUsername && (
-                                            <Typography
-                                                component="span"
-                                                variant="caption"
-                                                sx={{
-                                                    ml: 1,
-                                                    fontStyle: "italic",
-                                                }}
-                                            >
-                                                (Voted by {profileUsername})
-                                            </Typography>
-                                        )}
-                                    </Typography>
-                                    
-                                    {/* Show percentage and votes only if results should be visible */}
-                                    {shouldShowResults ? (
-                                        <Box
-                                            sx={{
-                                                display: "flex",
-                                                alignItems: "center",
-                                                gap: 1,
-                                            }}
-                                        >
-                                            <Typography
-                                                variant="body2"
-                                                sx={{
-                                                    fontWeight: 600,
-                                                    color: isSelected
-                                                        ? "#FFFFFF"
-                                                        : readOnly
-                                                        ? "rgba(255, 255, 255, 0.4)"
-                                                        : "#BA68C8",
-                                                    minWidth: "45px",
-                                                    textAlign: "right",
-                                                }}
-                                            >
-                                                {percentage.toFixed(1)}%
-                                            </Typography>
-                                            <Typography
-                                                variant="caption"
-                                                sx={{
-                                                    color: isSelected
-                                                        ? "rgba(255, 255, 255, 0.8)"
-                                                        : readOnly
-                                                        ? "rgba(255, 255, 255, 0.3)"
-                                                        : "rgba(243, 229, 245, 0.7)",
-                                                    minWidth: "30px",
-                                                    textAlign: "right",
-                                                }}
-                                            >
-                                                ({option.votes})
-                                            </Typography>
-                                        </Box>
-                                    ) : (
-                                        // Show placeholder or nothing when results are hidden
-                                        <Box sx={{ minWidth: "75px" }}></Box>
-                                    )}
-                                </Box>
-                            </Button>
+                                    </Box>
+                                )}
+                            </Box>
+                        );
+                    })}
 
-                            {/* Read-only message */}
-                            {readOnly && (
-                                <Box
+                    <Box
+                        display="flex"
+                        justifyContent="space-between"
+                        alignItems="center"
+                        mt={2}
+                    >
+                        {/* Show total votes only if results should be visible */}
+                        {shouldShowResults ? (
+                            <Typography variant="body2" color="text.secondary">
+                                {totalVotes} total votes
+                            </Typography>
+                        ) : (
+                            <Typography variant="body2" color="text.secondary">
+                                Vote to see results
+                            </Typography>
+                        )}
+                        
+                        {/* Comments section */}
+                        <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
+                            <Button
+                                startIcon={<CommentIcon />}
+                                onClick={handleOpenComments}
+                                size="small"
+                                variant="outlined"
+                                sx={{
+                                    borderColor: "#BA68C8",
+                                    color: "#BA68C8",
+                                    "&:hover": {
+                                        background: "rgba(186, 104, 200, 0.1)",
+                                        borderColor: "#9C27B0",
+                                    },
+                                }}
+                            >
+                                {poll.commentCount}
+                            </Button>
+                            
+                            {selectedOption && !readOnly && (
+                                <Button
+                                    size="small"
+                                    onClick={handleRemoveVote}
+                                    disabled={voting}
+                                    variant="outlined"
+                                    color="secondary"
                                     sx={{
-                                        position: "absolute",
-                                        top: "100%",
-                                        left: 0,
-                                        right: 0,
-                                        textAlign: "center",
-                                        mt: 0.5,
+                                        borderColor: "#E040FB",
+                                        color: "#E040FB",
+                                        "&:hover": {
+                                            background: "rgba(224, 64, 251, 0.1)",
+                                            borderColor: "#BA68C8",
+                                        },
                                     }}
                                 >
-                                </Box>
+                                    Remove Vote
+                                </Button>
                             )}
                         </Box>
-                    );
-                })}
+                    </Box>
+                </CardContent>
+            </Card>
 
-                <Box
-                    display="flex"
-                    justifyContent="space-between"
-                    alignItems="center"
-                    mt={2}
-                >
-                    {/* Show total votes only if results should be visible */}
-                    {shouldShowResults ? (
-                        <Typography variant="body2" color="text.secondary">
-                            {totalVotes} total votes
+            {/* Comments Dialog */}
+            <Dialog 
+                open={commentsOpen} 
+                onClose={handleCloseComments}
+                maxWidth="sm"
+                fullWidth
+            >
+                <DialogTitle>
+                    <Box display="flex" justifyContent="space-between" alignItems="center">
+                        <Typography variant="h6">
+                            Comments ({poll.commentCount})
+                        </Typography>
+                        <IconButton onClick={handleCloseComments}>
+                            <Close />
+                        </IconButton>
+                    </Box>
+                </DialogTitle>
+                <DialogContent>
+                    {/* Comments List */}
+                    {loadingComments ? (
+                        <Box display="flex" justifyContent="center" py={3}>
+                            <CircularProgress />
+                        </Box>
+                    ) : comments.length === 0 ? (
+                        <Typography variant="body2" color="text.secondary" align="center" py={3}>
+                            No comments yet. Be the first to comment!
                         </Typography>
                     ) : (
-                        <Typography variant="body2" color="text.secondary">
-                            Vote to see results
-                        </Typography>
+                        <List>
+                            {comments.map((comment, index) => (
+                                <Box key={comment.id}>
+                                    <ListItem alignItems="flex-start">
+                                        <ListItemText
+                                            primary={
+                                                <Box>
+                                                    <Box display="flex" justifyContent="space-between" alignItems="center" sx={{ mb: 0.5 }}>
+                                                        {/* Clickable username for comment author */}
+                                                        <Box
+                                                            sx={{
+                                                                display: "flex",
+                                                                alignItems: "center",
+                                                                gap: 0.5,
+                                                                cursor: "pointer",
+                                                                padding: "2px 0px",
+                                                                borderRadius: 1,
+                                                                transition: "all 0.2s ease",
+                                                                "&:hover": {
+                                                                    backgroundColor: "rgba(156, 39, 176, 0.1)",
+                                                                    transform: "translateY(-1px)",
+                                                                },
+                                                            }}
+                                                            onClick={() => handleUsernameClick(comment.username)}
+                                                        >
+                                                            <Person sx={{ fontSize: 14, color: "#BA68C8" }} />
+                                                            <Typography variant="subtitle2" fontWeight="bold" sx={{ color: "#BA68C8" }}>
+                                                                {isCurrentUserComment(comment) ? 'You' : comment.username}
+                                                            </Typography>
+                                                        </Box>
+                                                        <Typography variant="caption" color="text.secondary">
+                                                            {getCommentRelativeTime(comment.createdAt)}
+                                                        </Typography>
+                                                    </Box>
+                                                    <Typography variant="body2">
+                                                        {comment.content}
+                                                    </Typography>
+                                                </Box>
+                                            }
+                                        />
+                                        {isCurrentUserComment(comment) && (
+                                            <ListItemSecondaryAction>
+                                                <IconButton 
+                                                    size="small" 
+                                                    onClick={() => handleDeleteComment(comment.id)}
+                                                    color="error"
+                                                >
+                                                    <Delete fontSize="small" />
+                                                </IconButton>
+                                            </ListItemSecondaryAction>
+                                        )}
+                                    </ListItem>
+                                    {index < comments.length - 1 && <Divider variant="inset" component="li" />}
+                                </Box>
+                            ))}
+                        </List>
                     )}
-                    
-                    {selectedOption && !readOnly && (
-                        <Button
-                            size="small"
-                            onClick={handleRemoveVote}
-                            disabled={voting}
-                            variant="outlined"
-                            color="secondary"
-                            sx={{
-                                borderColor: "#E040FB",
-                                color: "#E040FB",
-                                "&:hover": {
-                                    background: "rgba(224, 64, 251, 0.1)",
-                                    borderColor: "#BA68C8",
-                                },
-                            }}
-                        >
-                            Remove Vote
-                        </Button>
+
+                    {/* Add Comment Form - Moved below all comments */}
+                    {!readOnly && (
+                        <Box sx={{ mt: 3, pt: 2, borderTop: 1, borderColor: 'divider' }}>
+                            <TextField
+                                fullWidth
+                                placeholder="Add a comment..."
+                                value={newComment}
+                                onChange={(e) => setNewComment(e.target.value)}
+                                slotProps={{
+                                    input: {
+                                        endAdornment: (
+                                            <InputAdornment position="end">
+                                                <IconButton 
+                                                    onClick={handleAddComment}
+                                                    disabled={!newComment.trim() || submittingComment}
+                                                    sx={{ color: "#9C27B0" }}
+                                                >
+                                                    <Send />
+                                                </IconButton>
+                                            </InputAdornment>
+                                        ),
+                                    },
+                                }}
+                                size="small"
+                            />
+                        </Box>
                     )}
-                </Box>
-            </CardContent>
-        </Card>
+                </DialogContent>
+            </Dialog>
+        </>
     );
 };
 

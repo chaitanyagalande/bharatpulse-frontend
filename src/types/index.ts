@@ -82,6 +82,7 @@ export interface PollResponse {
   optionThreeVotes?: number;
   optionFourVotes?: number;
   tags: string[];
+  commentCount: number;
 }
 
 export interface PollWithVoteResponse {
@@ -132,4 +133,23 @@ export interface Tag {
   name: string;
   city: string;
   usageCount: number;
+}
+
+export interface Comment {
+  id: number;
+  content: string;
+  pollId: number;
+  userId: number;
+  createdAt: string;
+}
+
+export interface CommentRequest {
+  content: string;
+}
+
+export interface CommentResponse {
+  id: number;
+  content: string;
+  username: string;
+  createdAt: string;
 }

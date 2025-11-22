@@ -1,5 +1,5 @@
 import axios from "axios";
-import type { CityRequest, LoginRequest, LoginResponse, PasswordUpdateRequest, Poll, PollCreateRequest, PollEditRequest, PollWithVoteResponse, RegisterRequest, Tag, UsernameUpdateRequest, UserPublicProfileResponse, Vote } from "../types";
+import type { CityRequest, CommentRequest, CommentResponse, LoginRequest, LoginResponse, PasswordUpdateRequest, Poll, PollCreateRequest, PollEditRequest, PollWithVoteResponse, RegisterRequest, Tag, UsernameUpdateRequest, UserPublicProfileResponse, Vote } from "../types";
 
 const API_BASE_URL = 'http://localhost:8080/api';
 
@@ -104,4 +104,18 @@ export const publicProfileAPI = {
 export const tagsAPI = {
     getPopularTags: (): Promise<Tag[]> => 
         api.get(`/tags/popular`).then(res => res.data),
+}
+
+export const commentsAPI = {
+    // Add comment to a poll
+    addComment: (pollId: number, content: CommentRequest): Promise<CommentResponse> => 
+        api.post(`/polls/${pollId}/comments`, content).then(res => res.data),
+
+    // Get all comments for a poll
+    getComments: (pollId: number): Promise<CommentResponse[]> => 
+        api.get(`/polls/${pollId}/comments`).then(res => res.data),
+
+    // Delete a comment (only your own comment)
+    deleteComment: (commentId: number): Promise<string> => 
+        api.delete(`/comments/${commentId}`).then(res => res.data),
 }
