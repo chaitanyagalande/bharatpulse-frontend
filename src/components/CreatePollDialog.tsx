@@ -50,7 +50,7 @@ const CreatePollDialog: React.FC<CreatePollDialogProps> = ({
       onPollCreated();
       handleClose();
     } catch (err: any) {
-      setError(err.response?.data || 'Failed to create poll');
+      setError(err.parsedMessage || err.response?.data || 'Failed to create poll');
     } finally {
       setLoading(false);
     }

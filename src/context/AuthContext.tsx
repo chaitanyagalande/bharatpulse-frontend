@@ -31,6 +31,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
             const userData = await profileAPI.getCurrentUser();
             setUser(userData);
         } catch(error) {
+            console.error("Failed to fetch current user:", error);
             localStorage.removeItem("token");
         } finally {
             setLoading(false);

@@ -24,6 +24,15 @@ const Profile: React.FC = () => {
     delete: false,
   });
 
+  const formatCityName = (city: string): string => {
+    if (!city) return '';
+  
+    return city
+      .split(' ')
+      .map(word => word.charAt(0).toUpperCase() + word.slice(1).toLowerCase())
+      .join(' ');
+  };
+
   const handleCityUpdate = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading({ ...loading, city: true });
@@ -37,7 +46,7 @@ const Profile: React.FC = () => {
         updateUser({ ...user, city: cityForm.city });
       }
     } catch (err: any) {
-      setError(err.response?.data || 'Failed to update city');
+      setError(err.parsedMessage || err.response?.data || 'Failed to update city');
     } finally {
       setLoading({ ...loading, city: false });
     }
@@ -56,7 +65,7 @@ const Profile: React.FC = () => {
         updateUser({ ...user, username: usernameForm.newUsername });
       }
     } catch (err: any) {
-      setError(err.response?.data || 'Failed to update username');
+      setError(err.parsedMessage || err.response?.data || 'Failed to update username');
     } finally {
       setLoading({ ...loading, username: false });
     }
@@ -83,7 +92,7 @@ const Profile: React.FC = () => {
       setMessage('Password updated successfully!');
       setPasswordForm({ oldPassword: '', newPassword: '', confirmPassword: '' });
     } catch (err: any) {
-      setError(err.response?.data || 'Failed to update password');
+      setError(err.parsedMessage || err.response?.data || 'Failed to update password');
     } finally {
       setLoading({ ...loading, password: false });
     }
@@ -98,7 +107,7 @@ const Profile: React.FC = () => {
       updateUser({ ...user, mode: newMode });
       setMessage(`Mode changed to ${newMode}`);
     } catch (err: any) {
-      setError(err.response?.data || 'Failed to toggle mode');
+      setError(err.parsedMessage || err.response?.data || 'Failed to toggle mode');
     } finally {
       setLoading({ ...loading, mode: false });
     }
@@ -110,7 +119,7 @@ const Profile: React.FC = () => {
       await profileAPI.deleteAccount();
       logout();
     } catch (err: any) {
-      setError(err.response?.data || 'Failed to delete account');
+      setError(err.parsedMessage || err.response?.data || 'Failed to delete account');
       setLoading({ ...loading, delete: false });
       setDeleteDialogOpen(false);
     }
@@ -137,7 +146,7 @@ const Profile: React.FC = () => {
           <Box display="flex" flexDirection="column" gap={1}>
             <Typography><strong>Username:</strong> {user.username}</Typography>
             <Typography><strong>Email:</strong> {user.email}</Typography>
-            <Typography><strong>City:</strong> {user.city}</Typography>
+            <Typography><strong>City:</strong> {formatCityName(user.city)}</Typography>
             <Typography><strong>Mode:</strong> {user.mode}</Typography>
           </Box>
         </Paper>

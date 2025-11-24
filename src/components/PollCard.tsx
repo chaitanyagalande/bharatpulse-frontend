@@ -146,7 +146,7 @@ const PollCard: React.FC<PollCardProps> = ({
             });
             onVoteUpdate();
         } catch (err: any) {
-            setError(err.response?.data || "Failed to vote");
+            setError(err.parsedMessage || err.response?.data || "Failed to vote");
         } finally {
             setVoting(false);
         }
@@ -164,7 +164,7 @@ const PollCard: React.FC<PollCardProps> = ({
             await votesAPI.removeVote(poll.id);
             onVoteUpdate();
         } catch (err: any) {
-            setError(err.response?.data || "Failed to remove vote");
+            setError(err.parsedMessage || err.response?.data || "Failed to remove vote");
         } finally {
             setVoting(false);
         }
@@ -177,7 +177,7 @@ const PollCard: React.FC<PollCardProps> = ({
             await pollsAPI.deletePoll(poll.id);
             onDelete(poll.id);
         } catch (err: any) {
-            setError(err.response?.data || "Failed to delete poll");
+            setError(err.parsedMessage || err.response?.data || "Failed to delete poll");
         }
         setMenuAnchor(null);
     };
@@ -216,7 +216,7 @@ const PollCard: React.FC<PollCardProps> = ({
             // Update comment count in poll data
             poll.commentCount += 1;
         } catch (err: any) {
-            setError("Failed to add comment");
+            setError(err.parsedMessage || "Failed to add comment");
         } finally {
             setSubmittingComment(false);
         }

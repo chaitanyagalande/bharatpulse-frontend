@@ -49,7 +49,7 @@ const Register: React.FC = () => {
             });
             setTimeout(() => navigate("/login"), 2000);
         } catch (err: any) {
-            setMessage(`❌ ${err.response?.data || "Registration failed"}`);
+            setMessage(`❌ ${err.parsedMessage || err.response?.data || "Registration failed"}`);
         } finally {
             setLoading(false);
         }

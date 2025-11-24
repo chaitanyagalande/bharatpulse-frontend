@@ -17,6 +17,7 @@ api.interceptors.request.use((config) => {
 })
 
 // Remove token 
+// Enhanced error handling interceptor
 api.interceptors.response.use(
     (response) => response,
     (error) => {
@@ -24,6 +25,38 @@ api.interceptors.response.use(
             localStorage.removeItem('token');
             window.location.href = '/login';
         }
+        
+        // Enhanced error handling for JSON responses
+        if (error.response?.data) {
+            const errorData = error.response.data;
+            
+            // Handle validation errors (field-specific errors)
+            if (error.response.status === 400 && typeof errorData === 'object') {
+                const errorMessages = Object.values(errorData)
+                    .filter(value => typeof value === 'string')
+                    .join(', ');
+                
+                if (errorMessages) {
+                    error.parsedMessage = errorMessages;
+                } else if (errorData.error) {
+                    error.parsedMessage = errorData.error;
+                }
+            } 
+            // Handle other JSON error responses
+            else if (typeof errorData === 'object' && errorData.error) {
+                error.parsedMessage = errorData.error;
+            } 
+            // Handle string error responses
+            else if (typeof errorData === 'string') {
+                error.parsedMessage = errorData;
+            }
+        }
+        
+        // Fallback error message
+        if (!error.parsedMessage) {
+            error.parsedMessage = error.message || 'An unexpected error occurred';
+        }
+        
         return Promise.reject(error);
     }
 );

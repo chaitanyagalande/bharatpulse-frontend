@@ -41,7 +41,7 @@ const Login: React.FC = () => {
             setMessage("✅ Login successful!");
             setTimeout(() => navigate("/feed"), 1000);
         } catch (err: any) {
-            setMessage(`❌ ${err.response?.data || "Login failed"}`);
+            setMessage(`❌ ${err.parsedMessage || err.response?.data || "Login failed"}`);
         } finally {
             setLoading(false);
         }

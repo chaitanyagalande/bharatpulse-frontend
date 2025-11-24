@@ -67,7 +67,7 @@ const EditPollDialog: React.FC<EditPollDialogProps> = ({
       onPollUpdated();
       handleClose();
     } catch (err: any) {
-      setError(err.response?.data || 'Failed to update poll');
+      setError(err.parsedMessage || err.response?.data || 'Failed to update poll');
     } finally {
       setLoading(false);
     }
