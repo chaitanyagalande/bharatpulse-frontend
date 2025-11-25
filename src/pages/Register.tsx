@@ -117,7 +117,7 @@ const Register: React.FC = () => {
                     display: "flex",
                     justifyContent: "center",
                     alignItems: "center",
-                    minHeight: "80vh",
+                    minHeight: "95vh",
                 }}
             >
                 <Paper
