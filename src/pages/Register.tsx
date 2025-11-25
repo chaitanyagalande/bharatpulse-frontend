@@ -8,25 +8,31 @@ import {
     Button,
     CircularProgress,
     Container,
+    IconButton,
+    InputAdornment,
     Link,
     Paper,
     TextField,
     Typography,
 } from "@mui/material";
+import { Visibility, VisibilityOff } from "@mui/icons-material";
 import StateCitySelect from "../components/StateCitySelect";
 
 const Register: React.FC = () => {
     const { register } = useAuth();
     const navigate = useNavigate();
-    const [formData, setFormData] = useState<RegisterRequest>({
+    const [formData, setFormData] = useState<RegisterRequest & { confirmPassword: string }>({
         username: "",
         email: "",
         password: "",
+        confirmPassword: "",
         city: "",
     });
     const [selectedState, setSelectedState] = useState("");
     const [message, setMessage] = useState("");
     const [loading, setLoading] = useState(false);
+    const [showPassword, setShowPassword] = useState(false);
+    const [showConfirmPassword, setShowConfirmPassword] = useState(false);
 
     const handleStateChange = (stateCode: string) => {
         setSelectedState(stateCode);
@@ -51,6 +57,14 @@ const Register: React.FC = () => {
         });
     };
 
+    const handleClickShowPassword = () => {
+        setShowPassword(!showPassword);
+    };
+
+    const handleClickShowConfirmPassword = () => {
+        setShowConfirmPassword(!showConfirmPassword);
+    };
+
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
         
@@ -60,16 +74,31 @@ const Register: React.FC = () => {
             return;
         }
 
+        // Validate password match
+        if (formData.password !== formData.confirmPassword) {
+            setMessage("❌ Passwords do not match");
+            return;
+        }
+
+        // Validate password length
+        if (formData.password.length < 6) {
+            setMessage("❌ Password must be at least 6 characters long");
+            return;
+        }
+
         setLoading(true);
         setMessage("");
 
         try {
-            await register(formData);
+            // Create register data without confirmPassword
+            const { confirmPassword, ...registerData } = formData;
+            await register(registerData);
             setMessage("✅ Registration successful! Please login.");
             setFormData({
                 username: "",
                 email: "",
                 password: "",
+                confirmPassword: "",
                 city: "",
             });
             setSelectedState("");
@@ -157,16 +186,64 @@ const Register: React.FC = () => {
                             value={formData.email}
                             onChange={handleChange}
                         />
+                        
+                        {/* Password Field with Visibility Toggle */}
                         <TextField
                             margin="normal"
                             required
                             fullWidth
                             label="Password"
                             name="password"
-                            type="password"
+                            type={showPassword ? "text" : "password"}
                             autoComplete="new-password"
                             value={formData.password}
                             onChange={handleChange}
+                            InputProps={{
+                                endAdornment: (
+                                    <InputAdornment position="end">
+                                        <IconButton
+                                            aria-label="toggle password visibility"
+                                            onClick={handleClickShowPassword}
+                                            edge="end"
+                                        >
+                                            {showPassword ? <VisibilityOff /> : <Visibility />}
+                                        </IconButton>
+                                    </InputAdornment>
+                                ),
+                            }}
+                            helperText="Password must be at least 6 characters"
+                        />
+                        
+                        {/* Confirm Password Field with Visibility Toggle */}
+                        <TextField
+                            margin="normal"
+                            required
+                            fullWidth
+                            label="Confirm Password"
+                            name="confirmPassword"
+                            type={showConfirmPassword ? "text" : "password"}
+                            autoComplete="new-password"
+                            value={formData.confirmPassword}
+                            onChange={handleChange}
+                            InputProps={{
+                                endAdornment: (
+                                    <InputAdornment position="end">
+                                        <IconButton
+                                            aria-label="toggle confirm password visibility"
+                                            onClick={handleClickShowConfirmPassword}
+                                            edge="end"
+                                        >
+                                            {showConfirmPassword ? <VisibilityOff /> : <Visibility />}
+                                        </IconButton>
+                                    </InputAdornment>
+                                ),
+                            }}
+                            error={formData.password !== formData.confirmPassword && formData.confirmPassword !== ""}
+                            helperText={
+                                formData.password !== formData.confirmPassword && formData.confirmPassword !== "" 
+                                    ? "Passwords do not match" 
+                                    : ""
+                            }
                         />
                         
                         {/* State and City Selection */}
