@@ -16,6 +16,16 @@ import { publicProfileAPI } from "../services/api";
 import { Person, Create, HowToVote } from "@mui/icons-material";
 import PollCard from "../components/PollCard";
 
+// Format city name function
+const formatCityName = (city: string): string => {
+    if (!city) return '';
+  
+    return city
+      .split(' ')
+      .map(word => word.charAt(0).toUpperCase() + word.slice(1).toLowerCase())
+      .join(' ');
+};
+
 interface TabPanelProps {
     children?: React.ReactNode;
     index: number;
@@ -87,6 +97,9 @@ const UserPublicProfile: React.FC = () => {
         setTabValue(newValue);
     };
 
+    // Format profile city
+    const formattedProfileCity = profile ? formatCityName(profile.city) : '';
+
     // Calculate city stats with created and voted counts
     const getCityStats = () => {
         if (!profile) return [];
@@ -99,8 +112,11 @@ const UserPublicProfile: React.FC = () => {
                 poll.poll.city === city.city
             );
 
+            const formattedCityName = formatCityName(city.city);
+
             return {
                 ...city,
+                city: formattedCityName, // Use formatted city name
                 pollsCreatedCount: createdInCity.length,
                 pollsVotedCount: votedInCity.length,
             };
@@ -145,7 +161,7 @@ const UserPublicProfile: React.FC = () => {
                                 {profile.username}
                             </Typography>
                             <Typography variant="body1" color="text.secondary">
-                                {profile.city}
+                                {formattedProfileCity} {/* Use formatted city name */}
                             </Typography>
                         </Box>
                     </Box>

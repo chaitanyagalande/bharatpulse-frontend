@@ -39,6 +39,16 @@ interface PollCardProps {
     userMode?: 'LOCAL' | 'EXPLORE';
 }
 
+// Format city name function
+const formatCityName = (city: string): string => {
+    if (!city) return '';
+  
+    return city
+      .split(' ')
+      .map(word => word.charAt(0).toUpperCase() + word.slice(1).toLowerCase())
+      .join(' ');
+};
+
 const PollCard: React.FC<PollCardProps> = ({
     pollData,
     onVoteUpdate,
@@ -60,6 +70,9 @@ const PollCard: React.FC<PollCardProps> = ({
     const [submittingComment, setSubmittingComment] = useState(false);
     const navigate = useNavigate();
     const { user } = useAuth();
+
+    // Format city name
+    const formattedCity = useMemo(() => formatCityName(poll.city), [poll.city]);
 
     // Function to calculate relative time
     const getRelativeTime = (dateString: string): string => {
@@ -260,7 +273,7 @@ const PollCard: React.FC<PollCardProps> = ({
                         {/* Username and City inline in top right corner */}
                         <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
                             <Chip
-                                label={poll.city}
+                                label={formattedCity}
                                 size="small"
                                 color="primary"
                                 variant="outlined"
