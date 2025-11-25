@@ -2,10 +2,27 @@ import { useState } from "react";
 import { useAuth } from "../context/AuthContext";
 import { profileAPI } from "../services/api";
 import type { CityRequest, PasswordUpdateRequest, UsernameUpdateRequest } from "../types";
-import { Alert, Box, Button, Container, Dialog, DialogActions, DialogContent, DialogContentText, DialogTitle, FormControlLabel, Paper, Switch, TextField, Typography } from "@mui/material";
+import { 
+    Alert, 
+    Box, 
+    Button, 
+    Container, 
+    Dialog, 
+    DialogActions, 
+    DialogContent, 
+    DialogContentText, 
+    DialogTitle, 
+    FormControlLabel, 
+    Paper, 
+    Switch, 
+    TextField, 
+    Typography 
+} from "@mui/material";
+import StateCitySelect from "../components/StateCitySelect";
 
 const Profile: React.FC = () => {
   const { user, updateUser, logout } = useAuth();
+  const [selectedState, setSelectedState] = useState("");
   const [cityForm, setCityForm] = useState({ city: user?.city || '' });
   const [usernameForm, setUsernameForm] = useState({ newUsername: user?.username || '' });
   const [passwordForm, setPasswordForm] = useState({
@@ -33,8 +50,25 @@ const Profile: React.FC = () => {
       .join(' ');
   };
 
+  const handleStateChange = (stateCode: string) => {
+    setSelectedState(stateCode);
+    // Reset city when state changes
+    setCityForm({ city: "" });
+  };
+
+  const handleCityChange = (city: string) => {
+    setCityForm({ city: city });
+  };
+
   const handleCityUpdate = async (e: React.FormEvent) => {
     e.preventDefault();
+    
+    // Validate city selection
+    if (!cityForm.city) {
+      setError("❌ Please select a city");
+      return;
+    }
+
     setLoading({ ...loading, city: true });
     setError('');
     setMessage('');
@@ -45,6 +79,7 @@ const Profile: React.FC = () => {
       if (user) {
         updateUser({ ...user, city: cityForm.city });
       }
+      setSelectedState(""); // Reset state selection after successful update
     } catch (err: any) {
       setError(err.parsedMessage || err.response?.data || 'Failed to update city');
     } finally {
@@ -177,19 +212,17 @@ const Profile: React.FC = () => {
             Update City
           </Typography>
           <Box component="form" onSubmit={handleCityUpdate}>
-            <TextField
-              fullWidth
-              label="New City"
-              value={cityForm.city}
-              onChange={(e) => setCityForm({ city: e.target.value })}
-              margin="normal"
-              required
+            <StateCitySelect
+              stateValue={selectedState}
+              cityValue={cityForm.city}
+              onStateChange={handleStateChange}
+              onCityChange={handleCityChange}
             />
             <Button
               type="submit"
               variant="contained"
               sx={{ mt: 2 }}
-              disabled={loading.city}
+              disabled={loading.city || !cityForm.city}
             >
               {loading.city ? 'Updating...' : 'Update City'}
             </Button>
@@ -313,4 +346,3 @@ const Profile: React.FC = () => {
 };
 
 export default Profile;
-

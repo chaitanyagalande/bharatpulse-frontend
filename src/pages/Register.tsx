@@ -13,6 +13,7 @@ import {
     TextField,
     Typography,
 } from "@mui/material";
+import StateCitySelect from "../components/StateCitySelect";
 
 const Register: React.FC = () => {
     const { register } = useAuth();
@@ -23,8 +24,25 @@ const Register: React.FC = () => {
         password: "",
         city: "",
     });
+    const [selectedState, setSelectedState] = useState("");
     const [message, setMessage] = useState("");
     const [loading, setLoading] = useState(false);
+
+    const handleStateChange = (stateCode: string) => {
+        setSelectedState(stateCode);
+        // Reset city when state changes
+        setFormData(prev => ({
+            ...prev,
+            city: ""
+        }));
+    };
+
+    const handleCityChange = (city: string) => {
+        setFormData(prev => ({
+            ...prev,
+            city: city
+        }));
+    };
 
     const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         setFormData({
@@ -35,6 +53,13 @@ const Register: React.FC = () => {
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
+        
+        // Validate city selection
+        if (!formData.city) {
+            setMessage("❌ Please select a city");
+            return;
+        }
+
         setLoading(true);
         setMessage("");
 
@@ -47,6 +72,7 @@ const Register: React.FC = () => {
                 password: "",
                 city: "",
             });
+            setSelectedState("");
             setTimeout(() => navigate("/login"), 2000);
         } catch (err: any) {
             setMessage(`❌ ${err.parsedMessage || err.response?.data || "Registration failed"}`);
@@ -142,16 +168,17 @@ const Register: React.FC = () => {
                             value={formData.password}
                             onChange={handleChange}
                         />
-                        <TextField
-                            margin="normal"
-                            required
-                            fullWidth
-                            label="City"
-                            name="city"
-                            autoComplete="address-level2"
-                            value={formData.city}
-                            onChange={handleChange}
-                        />
+                        
+                        {/* State and City Selection */}
+                        <Box sx={{ mt: 2, mb: 1 }}>
+                            <StateCitySelect
+                                stateValue={selectedState}
+                                cityValue={formData.city}
+                                onStateChange={handleStateChange}
+                                onCityChange={handleCityChange}
+                            />
+                        </Box>
+
                         <Button
                             type="submit"
                             fullWidth
