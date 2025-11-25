@@ -107,6 +107,7 @@ const MyPolls: React.FC = () => {
                             onEdit={handleEdit}
                             onDelete={handleDelete}
                             showActions={true}
+                            userMode="EXPLORE" // Forcing results to always show in MyPolls page
                         />
                     ))
                 )}
