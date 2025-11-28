@@ -16,47 +16,38 @@ api.interceptors.request.use((config) => {
     return config;
 })
 
-// Remove token 
-// Enhanced error handling interceptor
+// Automatic logout + redirect to /login if token is absent or expired
 api.interceptors.response.use(
     (response) => response,
     (error) => {
-        if(error.response?.status === 401) {
+        const status = error.response?.status;
+
+        if (status === 401 || status === 403) {
+            // Token expired, invalid, or absent → clear storage + redirect
             localStorage.removeItem('token');
             window.location.href = '/login';
         }
-        
-        // Enhanced error handling for JSON responses
+
+        // Enhanced error parsing
         if (error.response?.data) {
             const errorData = error.response.data;
-            
-            // Handle validation errors (field-specific errors)
-            if (error.response.status === 400 && typeof errorData === 'object') {
+
+            if (status === 400 && typeof errorData === 'object') {
                 const errorMessages = Object.values(errorData)
                     .filter(value => typeof value === 'string')
                     .join(', ');
-                
-                if (errorMessages) {
-                    error.parsedMessage = errorMessages;
-                } else if (errorData.error) {
-                    error.parsedMessage = errorData.error;
-                }
-            } 
-            // Handle other JSON error responses
-            else if (typeof errorData === 'object' && errorData.error) {
+                error.parsedMessage = errorMessages || errorData.error || '';
+            } else if (typeof errorData === 'object' && errorData.error) {
                 error.parsedMessage = errorData.error;
-            } 
-            // Handle string error responses
-            else if (typeof errorData === 'string') {
+            } else if (typeof errorData === 'string') {
                 error.parsedMessage = errorData;
             }
         }
-        
-        // Fallback error message
+
         if (!error.parsedMessage) {
             error.parsedMessage = error.message || 'An unexpected error occurred';
         }
-        
+
         return Promise.reject(error);
     }
 );
