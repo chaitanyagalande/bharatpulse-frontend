@@ -111,13 +111,13 @@ const Register: React.FC = () => {
     };
 
     return (
-        <Container component="main" maxWidth="sm">
+        <Container maxWidth="sm">
             <Box
                 sx={{
                     display: "flex",
                     justifyContent: "center",
                     alignItems: "center",
-                    minHeight: "95vh",
+                    minHeight: "100vh",
                 }}
             >
                 <Paper
@@ -129,26 +129,57 @@ const Register: React.FC = () => {
                     }}
                 >
                     <Typography
+                        variant="h1"
                         component="h1"
-                        variant="h4"
-                        align="center"
                         gutterBottom
+                        align="center"
                         color="primary"
                         fontWeight="bold"
+                        sx={{ 
+                            fontSize: { xs: '2.5rem', sm: '3rem' },
+                            mb: 1
+                        }}
                     >
                         BharatPulse
                     </Typography>
+                    
                     <Typography
-                        component="h2"
+                        variant="subtitle1"
+                        component="p"
+                        align="center"
+                        color="text.secondary"
+                        sx={{ 
+                            mb: 3,
+                            fontStyle: 'italic',
+                            lineHeight: 1.4,
+                            fontSize: { xs: '0.9rem', sm: '1rem' }
+                        }}
+                    >
+                        A City-Based Community Polling Platform{" "}
+                        <Box 
+                            component="span" 
+                            sx={{ 
+                                display: 'block',
+                                fontWeight: 'medium',
+                                color: 'primary.main'
+                            }}
+                        >
+                            for Indian Cities
+                        </Box>
+                    </Typography>
+
+                    <Typography
                         variant="h5"
+                        component="h2"
                         align="center"
                         gutterBottom
+                        fontWeight="bold"
                     >
                         Create Account
                     </Typography>
                     <Typography 
                         variant="body2" 
-                        color="textSecondary" 
+                        color="text.secondary" 
                         align="center" 
                         sx={{ mb: 3 }}
                     >
@@ -164,7 +195,7 @@ const Register: React.FC = () => {
                         </Alert>
                     )}
 
-                    <Box component="form" onSubmit={handleSubmit} sx={{ mt: 1 }}>
+                    <Box component="form" onSubmit={handleSubmit}>
                         <TextField
                             margin="normal"
                             required
@@ -261,23 +292,24 @@ const Register: React.FC = () => {
                             fullWidth
                             variant="contained"
                             size="large"
-                            sx={{ mt: 3, mb: 2 }}
                             disabled={loading}
+                            sx={{ mt: 3, mb: 2 }}
                         >
                             {loading ? <CircularProgress size={24} /> : "Sign Up"}
                         </Button>
-                        <Box textAlign="center">
-                            <Typography variant="body2" color="textSecondary">
-                                Already have an account?{" "}
-                                <Link
-                                    component={RouterLink}
-                                    to="/login"
-                                    style={{ fontWeight: "bold" }}
-                                >
-                                    Login here
-                                </Link>
-                            </Typography>
-                        </Box>
+                    </Box>
+                    
+                    <Box sx={{ textAlign: "center", mt: 3 }}>
+                        <Typography variant="body2" color="text.secondary">
+                            Already have an account?{" "}
+                            <Link
+                                component={RouterLink}
+                                to="/login"
+                                style={{ fontWeight: "bold" }}
+                            >
+                                Login here
+                            </Link>
+                        </Typography>
                     </Box>
                 </Paper>
             </Box>

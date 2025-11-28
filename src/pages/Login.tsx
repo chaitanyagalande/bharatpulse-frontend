@@ -74,26 +74,57 @@ const Login: React.FC = () => {
                     }}
                 >
                     <Typography
-                        variant="h4"
+                        variant="h1"
                         component="h1"
                         gutterBottom
                         align="center"
                         color="primary"
                         fontWeight="bold"
+                        sx={{ 
+                            fontSize: { xs: '2.5rem', sm: '3rem' },
+                            mb: 1
+                        }}
                     >
                         BharatPulse
                     </Typography>
+                    
+                    <Typography
+                        variant="subtitle1"
+                        component="p"
+                        align="center"
+                        color="text.secondary"
+                        sx={{ 
+                            mb: 3,
+                            fontStyle: 'italic',
+                            lineHeight: 1.4,
+                            fontSize: { xs: '0.9rem', sm: '1rem' }
+                        }}
+                    >
+                        A City-Based Community Polling Platform{" "}
+                        <Box 
+                            component="span" 
+                            sx={{ 
+                                display: 'block',
+                                fontWeight: 'medium',
+                                color: 'primary.main'
+                            }}
+                        >
+                            for Indian Cities
+                        </Box>
+                    </Typography>
+
                     <Typography
                         variant="h5"
                         component="h2"
                         align="center"
                         gutterBottom
+                        fontWeight="bold"
                     >
                         Sign In
                     </Typography>
                     <Typography 
                         variant="body2" 
-                        color="textSecondary" 
+                        color="text.secondary" 
                         align="center" 
                         sx={{ mb: 3 }}
                     >
@@ -158,7 +189,7 @@ const Login: React.FC = () => {
                     </Box>
                     
                     <Box sx={{ textAlign: "center", mt: 3 }}>
-                        <Typography variant="body2" color="textSecondary">
+                        <Typography variant="body2" color="text.secondary">
                             Don't have an account?{" "}
                             <Link
                                 component={RouterLink}
