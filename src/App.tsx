@@ -26,7 +26,7 @@ const BackendGate: React.FC<{ children: React.ReactNode }> = ({ children }) => {
     const wakeBackend = async () => {
       try {
         await axios.get(
-          `${API_BASE_URL.replace('/api', '')}/actuator/health`,
+          `${API_BASE_URL.replace('/api', '')}/health`,
           { timeout: 5000 }
         );
         console.log("✅ Backend awake");
