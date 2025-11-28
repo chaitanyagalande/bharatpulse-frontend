@@ -69,7 +69,7 @@ const Layout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
                         sx={{ flexGrow: 1, cursor: "pointer" }}
                         onClick={() => navigate("/feed")}
                     >
-                        CityPolling
+                        BharatPulse
                     </Typography>
                     {!isMobile && (
                         <Box sx={{ display: "flex", gap: 1 }}>

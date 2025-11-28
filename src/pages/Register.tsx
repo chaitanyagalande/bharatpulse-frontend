@@ -136,7 +136,7 @@ const Register: React.FC = () => {
                         color="primary"
                         fontWeight="bold"
                     >
-                        CityPolling
+                        BharatPulse
                     </Typography>
                     <Typography
                         component="h2"

@@ -29,7 +29,7 @@ const ProtectedRoute: React.FC<{ children: React.ReactNode }> = ({ children }) =
         fontSize: '1.125rem',
         fontWeight: 600,
       }}>
-        <div>Loading CityPolling...</div>
+        <div>Loading BharatPulse...</div>
       </div>
     );
   }
@@ -52,7 +52,7 @@ const PublicRoute: React.FC<{ children: React.ReactNode }> = ({ children }) => {
         fontSize: '1.125rem',
         fontWeight: 600,
       }}>
-        <div>Loading CityPolling...</div>
+        <div>Loading BharatPulse...</div>
       </div>
     );
   }

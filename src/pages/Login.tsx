@@ -81,7 +81,7 @@ const Login: React.FC = () => {
                         color="primary"
                         fontWeight="bold"
                     >
-                        CityPolling
+                        BharatPulse
                     </Typography>
                     <Typography
                         variant="h5"
