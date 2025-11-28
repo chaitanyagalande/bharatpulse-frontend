@@ -100,7 +100,7 @@ const BackendGate: React.FC<{ children: React.ReactNode }> = ({ children }) => {
             variant="body1"
             sx={{ opacity: 0.85, letterSpacing: 0.5, textAlign: 'center', maxWidth: '80%', mt: 1 }}
           >
-            Waking up the server… This may take a few minutes on first load.
+            Waking up the server… This may take a 3-4 minutes on first load.
           </Typography>
 
           <Typography variant="caption" sx={{ opacity: 0.6, mt: 1 }}>
