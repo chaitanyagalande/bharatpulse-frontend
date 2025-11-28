@@ -8,13 +8,14 @@ const API_BASE_URL = import.meta.env.VITE_API_BASE_URL;
 const BackendGate: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [backendReady, setBackendReady] = useState(false);
   const [progress, setProgress] = useState(0);
-  const progressRef = useRef(0); // for smooth animation
+  const progressRef = useRef(0);
 
   useEffect(() => {
-    // Smoothly increase progress: fast at first, then slow
+    // Slow smooth progress: increment smaller as it grows
     const interval = setInterval(() => {
-      const increment = 0.5 + (100 - progressRef.current) * 0.01; // slows down as it approaches 100%
-      progressRef.current = Math.min(progressRef.current + increment, 99); // never reach 100% until backend responds
+      const increment = 0.02 + (100 - progressRef.current) * 0.001; 
+      // Starts faster than 0, but extremely slows as it nears 100%
+      progressRef.current = Math.min(progressRef.current + increment, 99);
       setProgress(progressRef.current);
     }, 100);
 
@@ -25,7 +26,7 @@ const BackendGate: React.FC<{ children: React.ReactNode }> = ({ children }) => {
         progressRef.current = 100;
         setProgress(100);
         clearInterval(interval);
-        setTimeout(() => setBackendReady(true), 300); // small delay to show 100% fill
+        setTimeout(() => setBackendReady(true), 500); // show full bar briefly
       } catch (err) {
         console.log('⏳ Backend sleeping, retrying in 5s...');
         setTimeout(wakeBackend, 5000);
